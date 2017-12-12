@@ -22,17 +22,6 @@ object HomeintegratorlagomService  {
   */
 trait HomeintegratorlagomService extends Service {
 
-  /**
-    * Example: curl http://localhost:9000/api/hello/Alice
-    */
-  def hello(id: String): ServiceCall[NotUsed, String]
-
-  /**
-    * Example: curl -H "Content-Type: application/json" -X POST -d '{"message":
-    * "Hi"}' http://localhost:9000/api/hello/Alice
-    */
-  def useGreeting(id: String): ServiceCall[GreetingMessage, Done]
-
   def homeData(interval: Int): ServiceCall[String, Source[HomeData, NotUsed]]
 
   /**
@@ -50,8 +39,6 @@ trait HomeintegratorlagomService extends Service {
     // @formatter:off
     named("home-integrator-lagom")
       .withCalls(
-        pathCall("/api/hello/:id", hello _),
-        pathCall("/api/hello/:id", useGreeting _),
         pathCall("/api/homeData/:interval", homeData _)
       )
       .withTopics(

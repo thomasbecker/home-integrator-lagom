@@ -54,7 +54,7 @@ class HomeintegratorlagomServiceImpl(persistentEntityRegistry: PersistentEntityR
       maxBackoff = 30.seconds,
       randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
     ) { () =>
-      Source.tick(0 millis, intervalS seconds, "TICK").map((tick) => homeCollector.collectData)
+      Source.tick(0 millis, intervalS seconds, "TICK").map((_) => homeCollector.collectData)
     })
   }
 }
