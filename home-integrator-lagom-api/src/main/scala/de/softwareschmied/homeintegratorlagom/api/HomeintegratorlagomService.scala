@@ -24,9 +24,6 @@ trait HomeintegratorlagomService extends Service {
 
   def homeData(interval: Int): ServiceCall[String, Source[HomeData, NotUsed]]
 
-  /**
-    * This gets published to Kafka.
-    */
   def greetingsTopic(): Topic[GreetingMessageChanged]
 
   implicit val format4: Format[MeterData] = Json.format[MeterData]
