@@ -14,9 +14,9 @@ val macwire = "com.softwaremill.macwire" %% "macros" % "2.2.5" % "provided"
 val scalaTest = "org.scalatest" %% "scalatest" % "3.0.1" % Test
 
 lazy val `home-integrator-lagom` = (project in file("."))
-  .aggregate(`home-integrator-lagom-api`, `home-integrator-lagom-impl`) //, `home-integrator-lagom-stream-api`, `home-integrator-lagom-stream-impl`)
+  .aggregate(`home-integrator-api`, `home-integrator-impl`) //, `home-integrator-lagom-stream-api`, `home-integrator-lagom-stream-impl`)
 
-lazy val `home-integrator-lagom-api` = (project in file("home-integrator-lagom-api"))
+lazy val `home-integrator-api` = (project in file("home-integrator-api"))
   .settings(
     libraryDependencies ++= Seq(
       lagomScaladslApi,
@@ -25,7 +25,7 @@ lazy val `home-integrator-lagom-api` = (project in file("home-integrator-lagom-a
     resolvers += Resolver.mavenLocal
   )
 
-lazy val `home-integrator-lagom-impl` = (project in file("home-integrator-lagom-impl"))
+lazy val `home-integrator-impl` = (project in file("home-integrator-impl"))
   .enablePlugins(LagomScala)
   .settings(
     libraryDependencies ++= Seq(
@@ -39,4 +39,4 @@ lazy val `home-integrator-lagom-impl` = (project in file("home-integrator-lagom-
     resolvers += Resolver.mavenLocal
   )
   .settings(lagomForkedTestSettings: _*)
-  .dependsOn(`home-integrator-lagom-api`)
+  .dependsOn(`home-integrator-api`)
