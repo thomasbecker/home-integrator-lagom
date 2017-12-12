@@ -21,7 +21,7 @@
             "imagePullPolicy": "Never",
             "resources": {
               "requests": {
-                "memory": "512Mi"
+                "memory": "384Mi"
               }
             },
             "ports": [
@@ -37,7 +37,7 @@
             "env": [
               {
                 "name": "APPLICATION_SECRET",
-                "value": "home_secret_123",
+                "value": "home_secret_123"
               },
               {
                 "name": "CASSANDRA_SERVICE_NAME",
@@ -77,8 +77,8 @@
                 "path": "/_status/circuit-breaker/current",
                 "port": 9000
               },
-              "initialDelaySeconds": 5,
-              "periodSeconds": 5
+              "initialDelaySeconds": 30,
+              "periodSeconds": 30
             }
           }
         ]
