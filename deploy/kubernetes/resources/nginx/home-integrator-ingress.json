@@ -21,27 +21,7 @@
                 "serviceName": "home-integrator",
                 "servicePort": 9000
               }
-            }//,
-//            {
-//              "path": "/api/users",
-//              "backend": {
-//                "serviceName": "friendservice",
-//                "servicePort": 9000
-//              }
-//            },
-//            {
-//              "path": "/api/chirps",
-//              "backend": {
-//                "serviceName": "chirpservice",
-//                "servicePort": 9000
-//              }
-//            },
-//            {
-//              "backend": {
-//                "serviceName": "web",
-//                "servicePort": 9000
-//              }
-//            }
+            }
           ]
         }
       }
