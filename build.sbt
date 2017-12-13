@@ -33,12 +33,13 @@ lazy val `home-integrator-impl` = (project in file("home-integrator-impl"))
   .settings(
     version := buildVersion,
     version in Docker := buildVersion,
+    dockerRepository := Some(BuildTarget.dockerRepository),
     dockerUpdateLatest := true,
     dockerEntrypoint ++=
       """-Dhttp.address="$(eval "echo $HOME_INTEGRATOR_SERVICE_BIND_IP")" -Dhttp.port="$(eval "echo $HOME_INTEGRATOR_SERVICE_BIND_PORT")" -Dakka.remote.netty.tcp.hostname="$(eval "echo $AKKA_REMOTING_HOST")" -Dakka.remote.netty.tcp.bind-hostname="$(eval "echo $AKKA_REMOTING_BIND_HOST")" -Dakka.remote.netty.tcp.port="$(eval "echo $AKKA_REMOTING_PORT")" -Dakka.remote.netty.tcp.bind-port="$(eval "echo $AKKA_REMOTING_BIND_PORT")" $(IFS=','; I=0; for NODE in $AKKA_SEED_NODES; do echo "-Dakka.cluster.seed-nodes.$I=akka.tcp://home-integrator-service@$NODE"; I=$(expr $I + 1); done)""".split(" ").toSeq, dockerCommands :=
       dockerCommands.value.flatMap {
         case ExecCmd("ENTRYPOINT", args @ _*) => Seq(Cmd("ENTRYPOINT", args.mkString(" ")))
-        case c @ Cmd("FROM", _) => Seq(c, ExecCmd("RUN", "/bin/sh", "-c", "apk add --no-cache bash && ln -sf /bin/bash /bin/sh"))
+        case c @ Cmd("FROM", _) => Seq(c, ExecCmd("RUN", "/bin/sh", "-c", "apt-get install bash && ln -sf /bin/bash /bin/sh"))
         case v => Seq(v)
       },
     libraryDependencies ++= Seq(
