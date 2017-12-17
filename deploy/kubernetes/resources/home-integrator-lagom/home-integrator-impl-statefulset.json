@@ -49,11 +49,11 @@
                 "value": "_native._tcp.cassandra.default.svc.cluster.local"
               },
               {
-                "name": "HOME-INTEGRATOR-SERVICE_BIND_PORT",
+                "name": "HOME_INTEGRATOR_SERVICE_BIND_PORT",
                 "value": "9000"
               },
               {
-                "name": "HOME-INTEGRATOR-SERVICE_BIND_IP",
+                "name": "HOME_INTEGRATOR_SERVICE_BIND_IP",
                 "value": "0.0.0.0"
               },
               {
