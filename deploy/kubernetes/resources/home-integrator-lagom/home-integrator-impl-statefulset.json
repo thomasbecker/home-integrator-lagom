@@ -14,11 +14,16 @@
         }
       },
       "spec": {
+	    "imagePullSecrets": [
+              {
+                "name": "regsecret"
+              }
+            ],
         "containers": [
           {
             "name": "home-integrator-service",
-            "image": "home-integrator-lagom/home-integrator-impl",
-            "imagePullPolicy": "Never",
+            "image": "index.docker.io/thomasbecker/home-integrator:version1",
+	    "imagePullPolicy": "Always",
             "resources": {
               "requests": {
                 "memory": "384Mi"
@@ -74,11 +79,10 @@
             ],
             "readinessProbe": {
               "httpGet": {
-                "path": "/_status/circuit-breaker/current",
                 "port": 9000
               },
               "initialDelaySeconds": 30,
-              "periodSeconds": 30
+              "periodSeconds": 600
             }
           }
         ]
