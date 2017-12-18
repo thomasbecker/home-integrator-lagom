@@ -5,16 +5,14 @@
     "labels": {
       "app": "homeintegratorservice"
     },
-    "name": "homeintegratorservice"
+    "name": "homeintegratorservice-akka-remoting"
   },
   "spec": {
-    "clusterIP": "None",
     "ports": [
       {
-        "name": "http-lagom-api",
-        "port": 9000,
+        "port": 2551,
         "protocol": "TCP",
-        "targetPort": 9000
+        "targetPort": 2551
       }
     ],
     "selector": {

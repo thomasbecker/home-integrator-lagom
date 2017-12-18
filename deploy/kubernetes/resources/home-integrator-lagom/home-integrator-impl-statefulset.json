@@ -2,15 +2,15 @@
   "apiVersion": "apps/v1beta1",
   "kind": "StatefulSet",
   "metadata": {
-    "name": "home-integrator-service"
+    "name": "homeintegratorservice"
   },
   "spec": {
-    "serviceName": "home-integrator-service",
+    "serviceName": "homeintegratorservice",
     "replicas": 1,
     "template": {
       "metadata": {
         "labels": {
-          "app": "home-integrator-service"
+          "app": "homeintegratorservice"
         }
       },
       "spec": {
@@ -21,9 +21,9 @@
             ],
         "containers": [
           {
-            "name": "home-integrator-service",
+            "name": "homeintegratorservice",
             "image": "index.docker.io/thomasbecker/home-integrator:version1",
-	    "imagePullPolicy": "Always",
+        "imagePullPolicy": "Always",
             "resources": {
               "requests": {
                 "memory": "384Mi"
@@ -66,15 +66,15 @@
               },
               {
                 "name": "AKKA_REMOTING_HOST",
-                "value": "$HOSTNAME.home-integrator-service.default.svc.cluster.local"
+                "value": "$HOSTNAME.homeintegratorservice.default.svc.cluster.local"
               },
               {
                 "name": "AKKA_REMOTING_BIND_HOST",
-                "value": "$HOSTNAME.home-integrator-service.default.svc.cluster.local"
+                "value": "$HOSTNAME.homeintegratorservice.default.svc.cluster.local"
               },
               {
                 "name": "AKKA_SEED_NODES",
-                "value": "home-integrator-service-0.home-integrator-service.default.svc.cluster.local:2551,home-integrator-service-1.home-integrator-service.default.svc.cluster.local:2551,home-integrator-service-2.home-integrator-service.default.svc.cluster.local:2551"
+                "value": "homeintegratorservice-0.homeintegratorservice.default.svc.cluster.local:2551,homeintegratorservice-1.homeintegratorservice.default.svc.cluster.local:2551,homeintegratorservice2.homeintegratorservice.default.svc.cluster.local:2551"
               }
             ],
             "readinessProbe": {
