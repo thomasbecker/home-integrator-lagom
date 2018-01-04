@@ -35,7 +35,7 @@ object BuildTarget {
         ),
         Keys.unmanagedResourceDirectories in Compile += Keys.sourceDirectory.value / "main" / "kubernetes-resources"
       )
-    case local =>
+    case Local =>
       Seq(
         Keys.unmanagedResourceDirectories in Compile += Keys.sourceDirectory.value / "main" / "local-resources"
       )
