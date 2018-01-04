@@ -36,5 +36,5 @@ abstract class HomeintegratorlagomApplication(context: LagomApplicationContext)
   override lazy val jsonSerializerRegistry = HomeintegratorlagomSerializerRegistry
 
   // Register the home-integrator-lagom persistent entity
-  persistentEntityRegistry.register(wire[HomeintegratorlagomEntity])
+//  persistentEntityRegistry.register(wire[HomeintegratorlagomEntity])
 }
