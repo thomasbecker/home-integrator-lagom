@@ -4,6 +4,7 @@ object BuildTarget {
   private sealed trait DeploymentRuntime
   private case object ConductR extends DeploymentRuntime
   private case object Kubernetes extends DeploymentRuntime
+  private case object Local extends DeploymentRuntime
   private case object Marathon extends DeploymentRuntime
 
   private val deploymentRuntime: DeploymentRuntime = sys.props.get("buildTarget") match {
@@ -12,6 +13,9 @@ object BuildTarget {
 
     case Some(v) if v.toLowerCase == "kubernetes" =>
       Kubernetes
+
+    case Some(v) if v.toLowerCase == "local" =>
+      Local
 
     case Some(v) if v.toLowerCase == "marathon" =>
       Marathon
@@ -48,6 +52,7 @@ object BuildTarget {
 
   val dockerRepository: String = deploymentRuntime match {
     case Kubernetes => "home-integrator"
+    case Local => "home-integrator"
     case Marathon   => "home-integrator-marathon"
     case ConductR   => "home-integrator-conductr"
   }
