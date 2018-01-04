@@ -31,6 +31,10 @@ object BuildTarget {
         ),
         Keys.unmanagedResourceDirectories in Compile += Keys.sourceDirectory.value / "main" / "kubernetes-resources"
       )
+    case local =>
+      Seq(
+        Keys.unmanagedResourceDirectories in Compile += Keys.sourceDirectory.value / "main" / "local-resources"
+      )
     case Marathon   =>
       Seq(
         Keys.libraryDependencies ++= Seq(
