@@ -4,7 +4,7 @@ object BuildTarget {
   private sealed trait DeploymentRuntime
   private case object ConductR extends DeploymentRuntime
   private case object Kubernetes extends DeploymentRuntime
-  private case object Local extends DeploymentRuntime
+  private case object Unmanaged extends DeploymentRuntime
   private case object Marathon extends DeploymentRuntime
 
   private val deploymentRuntime: DeploymentRuntime = sys.props.get("buildTarget") match {
@@ -14,14 +14,14 @@ object BuildTarget {
     case Some(v) if v.toLowerCase == "kubernetes" =>
       Kubernetes
 
-    case Some(v) if v.toLowerCase == "local" =>
-      Local
+    case Some(v) if v.toLowerCase == "unmanaged" =>
+      Unmanaged
 
     case Some(v) if v.toLowerCase == "marathon" =>
       Marathon
 
     case Some(v) =>
-      sys.error(s"The build target $v is not supported. Available: 'conductr', 'kubernetes', 'marathon'")
+      sys.error(s"The build target $v is not supported. Available: 'conductr', 'kubernetes', 'unmanaged', 'marathon'")
 
     case None =>
       ConductR
@@ -35,9 +35,9 @@ object BuildTarget {
         ),
         Keys.unmanagedResourceDirectories in Compile += Keys.sourceDirectory.value / "main" / "kubernetes-resources"
       )
-    case Local =>
+    case Unmanaged =>
       Seq(
-        Keys.unmanagedResourceDirectories in Compile += Keys.sourceDirectory.value / "main" / "local-resources"
+        Keys.unmanagedResourceDirectories in Compile += Keys.sourceDirectory.value / "main" / "unmanaged-resources"
       )
     case Marathon   =>
       Seq(
@@ -52,7 +52,7 @@ object BuildTarget {
 
   val dockerRepository: String = deploymentRuntime match {
     case Kubernetes => "home-integrator"
-    case Local => "home-integrator"
+    case Unmanaged => "home-integrator"
     case Marathon   => "home-integrator-marathon"
     case ConductR   => "home-integrator-conductr"
   }
