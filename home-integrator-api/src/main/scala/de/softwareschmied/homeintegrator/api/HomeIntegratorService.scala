@@ -32,7 +32,7 @@ trait HomeIntegratorService extends Service {
   override final def descriptor: Descriptor = {
     import Service._
     // @formatter:off
-    named("home-integrator-lagom")
+    named("homeintegratorservice")
       .withCalls(
         pathCall("/api/homeData/live/:interval", homeData _),
         pathCall("/api/homeData/:interval?from", homeDataFilteredByTimestamp _),
