@@ -47,6 +47,7 @@ lazy val `home-integrator-impl` = (project in file("home-integrator-impl"))
       lagomScaladslPersistenceCassandra,
       lagomScaladslKafkaBroker,
       lagomJavadslJackson,
+      lagomJavadslClient,
       lagomScaladslTestKit,
       "com.datastax.cassandra" % "cassandra-driver-extras" % "3.0.0",
       homedataintegration,
