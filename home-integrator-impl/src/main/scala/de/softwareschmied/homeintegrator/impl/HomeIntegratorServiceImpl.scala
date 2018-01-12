@@ -34,7 +34,7 @@ class HomeIntegratorServiceImpl(persistentEntityRegistry: PersistentEntityRegist
       maxBackoff = 30.seconds,
       randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
     ) { () =>
-      Source.tick(30 seconds, intervalS seconds, "TICK").map((_) => homeCollector.collectData)
+      Source.tick(0 millis, intervalS seconds, "TICK").map((_) => homeCollector.collectData)
     }
     val pastHomeDatas = Await.result(homeDataRepository.getHomeDataSince(from), 30 seconds).to[scala.collection.immutable.Seq]
     val pastSource = Source(pastHomeDatas)
