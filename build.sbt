@@ -46,7 +46,9 @@ lazy val `home-integrator-impl` = (project in file("home-integrator-impl"))
     libraryDependencies ++= Seq(
       lagomScaladslPersistenceCassandra,
       lagomScaladslKafkaBroker,
+      lagomJavadslJackson,
       lagomScaladslTestKit,
+      "com.datastax.cassandra" % "cassandra-driver-extras" % "3.0.0",
       homedataintegration,
       macwire,
       scalaTest
