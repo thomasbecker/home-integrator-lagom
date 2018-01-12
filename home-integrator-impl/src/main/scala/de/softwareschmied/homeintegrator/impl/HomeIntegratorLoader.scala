@@ -1,8 +1,8 @@
 package de.softwareschmied.homeintegrator.impl
 
-import com.lightbend.lagom.javadsl.client.ConfigurationServiceLocator
 import com.lightbend.lagom.scaladsl.api.ServiceLocator
 import com.lightbend.lagom.scaladsl.broker.kafka.LagomKafkaComponents
+import com.lightbend.lagom.scaladsl.client.ConfigurationServiceLocatorComponents
 import com.lightbend.lagom.scaladsl.devmode.LagomDevModeComponents
 import com.lightbend.lagom.scaladsl.persistence.cassandra.CassandraPersistenceComponents
 import com.lightbend.lagom.scaladsl.server._
@@ -28,9 +28,7 @@ abstract class HomeIntegratorApplication(context: LagomApplicationContext)
 
 class HomeIntegratorApplicationLoader extends LagomApplicationLoader {
   override def load(context: LagomApplicationContext): HomeIntegratorApplication =
-    new HomeIntegratorApplication(context) {
-      override def serviceLocator: ConfigurationServiceLocator = ConfigurationServiceLocator
-    }
+    new HomeIntegratorApplication(context) with ConfigurationServiceLocatorComponents
 
 
   override def loadDevMode(context: LagomApplicationContext) =
