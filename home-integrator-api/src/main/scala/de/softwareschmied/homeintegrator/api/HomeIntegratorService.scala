@@ -1,9 +1,7 @@
 package de.softwareschmied.homeintegratorlagom.api
 
+import akka.NotUsed
 import akka.stream.scaladsl.Source
-import akka.{Done, NotUsed}
-import com.lightbend.lagom.scaladsl.api.broker.Topic
-import com.lightbend.lagom.scaladsl.api.broker.kafka.{KafkaProperties, PartitionKeyStrategy}
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
 import de.softwareschmied.homedataintegration.HomeData
 import de.softwareschmied.myhomecontrolinterface.MyHomeControlData

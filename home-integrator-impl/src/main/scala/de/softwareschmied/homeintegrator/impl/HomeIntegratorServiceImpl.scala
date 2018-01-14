@@ -14,9 +14,10 @@ import org.slf4j.LoggerFactory
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-class HomeIntegratorServiceImpl(persistentEntityRegistry: PersistentEntityRegistry, homeDataRepository: HomeDataRepository) extends
+class HomeIntegratorServiceImpl(system: ActorSystem, persistentEntityRegistry: PersistentEntityRegistry, homeDataRepository: HomeDataRepository) extends
   HomeIntegratorService {
   val homeCollector = new HomeCollector
+  val fetchInterval = system.settings.config.getDuration("fetchInterval", TimeUnit.MILLISECONDS).milliseconds
 
   override def homeData(intervalS: Int) = ServiceCall { tickMessage =>
     Future.successful(RestartSource.withBackoff(
@@ -54,9 +55,9 @@ class HomeIntegratorServiceImpl(persistentEntityRegistry: PersistentEntityRegist
 class HomeDataFetchScheduler(system: ActorSystem, persistentEntityRegistry: PersistentEntityRegistry)(implicit val mat: Materializer,
                                                                                                 ec: ExecutionContext) {
   private val log = LoggerFactory.getLogger(classOf[HomeDataFetchScheduler])
+  val fetchInterval = system.settings.config.getDuration("fetchInterval", TimeUnit.MILLISECONDS).milliseconds
 
   val homeCollector = new HomeCollector
-  val fetchInterval = system.settings.config.getDuration("fetchInterval", TimeUnit.MILLISECONDS).milliseconds
   val source = RestartSource.withBackoff(
     minBackoff = 3.seconds,
     maxBackoff = 30.seconds,
