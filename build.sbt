@@ -61,3 +61,8 @@ lazy val `home-integrator-impl` = (project in file("home-integrator-impl"))
   .settings(lagomForkedTestSettings: _*)
   .settings(BuildTarget.additionalSettings)
   .dependsOn(`home-integrator-api`)
+
+//if(BuildTarget.additionalSettings instanceof BuildTarget.Unmanaged.type){
+  lagomKafkaEnabled in ThisBuild := false
+  lagomKafkaAddress in ThisBuild := "192.168.188.32:9092"
+//}
