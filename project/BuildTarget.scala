@@ -15,7 +15,6 @@ object BuildTarget {
       Kubernetes
 
     case Some(v) if v.toLowerCase == "unmanaged" =>
-      println("unmanaged!")
       Unmanaged
 
     case Some(v) if v.toLowerCase == "marathon" =>
