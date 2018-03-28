@@ -40,6 +40,7 @@ object BuildTarget {
       Seq(
         Keys.unmanagedResourceDirectories in Compile += Keys.sourceDirectory.value / "main" / "unmanaged-resources"
       )
+      Def.task {println(Keys.sourceDirectory.value / "main" / "unmanaged-resources")}
     case Marathon   =>
       Seq(
         Keys.libraryDependencies ++= Seq(

@@ -2,6 +2,7 @@ package de.softwareschmied.homeintegrator.impl
 
 import java.util.concurrent.TimeUnit
 
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Concat, RestartSource, Sink, Source}
@@ -16,8 +17,10 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 
 class HomeIntegratorServiceImpl(system: ActorSystem, persistentEntityRegistry: PersistentEntityRegistry, homeDataRepository: HomeDataRepository) extends
   HomeIntegratorService {
-  val homeCollector = new HomeCollector
-  val fetchInterval = system.settings.config.getDuration("fetchInterval", TimeUnit.MILLISECONDS).milliseconds
+  private val log = LoggerFactory.getLogger(classOf[HomeIntegratorServiceImpl])
+  private val homeCollector = new HomeCollector
+  private val homeDataMathFunctions = new HomeDataMathFunctions
+  private val fetchInterval = system.settings.config.getDuration("fetchInterval", TimeUnit.MILLISECONDS).milliseconds
 
   override def homeData(intervalS: Int) = ServiceCall { tickMessage =>
     Future.successful(RestartSource.withBackoff(
@@ -29,7 +32,9 @@ class HomeIntegratorServiceImpl(system: ActorSystem, persistentEntityRegistry: P
     })
   }
 
-  override def homeDataFilteredByTimestamp(intervalS: Int, from: Int) = ServiceCall { tickMessage =>
+  private val targetSize = 100
+
+  override def homeDataFilteredByTimestamp(intervalS: Int, from: Int) = ServiceCall { _ =>
     val tickSource = RestartSource.withBackoff(
       minBackoff = 3.seconds,
       maxBackoff = 30.seconds,
@@ -38,22 +43,25 @@ class HomeIntegratorServiceImpl(system: ActorSystem, persistentEntityRegistry: P
       Source.tick(0 millis, intervalS seconds, "TICK").map((_) => homeCollector.collectData)
     }
     val pastHomeDatas = Await.result(homeDataRepository.getHomeDataSince(from), 30 seconds).to[scala.collection.immutable.Seq]
-    val pastSource = Source(pastHomeDatas)
-    Future.successful(Source.combine(pastSource, tickSource)(Concat(_)))
+    var source: Source[HomeData, NotUsed] = null
+    if (pastHomeDatas.size > targetSize) {
+      val chunkSize = pastHomeDatas.size / targetSize
+      val chunkedPastHomeDatas = pastHomeDatas.grouped(chunkSize).map(x => homeDataMathFunctions.averageHomeData(x)).to[scala.collection.immutable.Seq]
+      log.info("Found {} homeDatas and divided them to: {} averaged homeDatas", pastHomeDatas.size, chunkedPastHomeDatas.size)
+      source = Source(chunkedPastHomeDatas)
+    } else {
+      source = Source(pastHomeDatas)
+    }
+    Future.successful(Source.combine(source, tickSource)(Concat(_)))
   }
 
   override def pastHomeData = ServiceCall {
     _ => homeDataRepository.getHomeDataSince(1515339914)
   }
-
-  override def hello = ServiceCall { _ =>
-    Future.successful("hello world")
-  }
-
 }
 
 class HomeDataFetchScheduler(system: ActorSystem, persistentEntityRegistry: PersistentEntityRegistry)(implicit val mat: Materializer,
-                                                                                                ec: ExecutionContext) {
+                                                                                                      ec: ExecutionContext) {
   private val log = LoggerFactory.getLogger(classOf[HomeDataFetchScheduler])
   val fetchInterval = system.settings.config.getDuration("fetchInterval", TimeUnit.MILLISECONDS).milliseconds
 

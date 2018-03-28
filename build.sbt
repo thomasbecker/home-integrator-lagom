@@ -13,6 +13,7 @@ resolvers += Resolver.mavenLocal
 val homedataintegration = "de.softwareschmied" %% "homedataintegration" % "0.0.1-SNAPSHOT"
 val macwire = "com.softwaremill.macwire" %% "macros" % "2.2.5" % "provided"
 val scalaTest = "org.scalatest" %% "scalatest" % "3.0.1" % Test
+val specs2 = "org.specs2" %% "specs2-core" % "4.0.2" % Test
 
 lazy val buildVersion = sys.props.getOrElse("buildVersion", "1.0.0-SNAPSHOT")
 
@@ -52,7 +53,8 @@ lazy val `home-integrator-impl` = (project in file("home-integrator-impl"))
       "com.datastax.cassandra" % "cassandra-driver-extras" % "3.0.0",
       homedataintegration,
       macwire,
-      scalaTest
+      scalaTest,
+      specs2
     ),
     resolvers += Resolver.mavenLocal
   )

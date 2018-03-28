@@ -20,8 +20,6 @@ trait HomeIntegratorService extends Service {
 
   def homeDataFilteredByTimestamp(interval: Int, from: Int): ServiceCall[String, Source[HomeData, NotUsed]]
 
-  def hello: ServiceCall[NotUsed, String]
-
   implicit val format4: Format[MeterData] = Json.format[MeterData]
   implicit val format2: Format[MyHomeControlData] = Json.format[MyHomeControlData]
   implicit val format3: Format[PowerFlowSite] = Json.format[PowerFlowSite]
@@ -35,7 +33,6 @@ trait HomeIntegratorService extends Service {
         pathCall("/api/homeData/live/:interval", homeData _),
         pathCall("/api/homeData/:interval?from", homeDataFilteredByTimestamp _),
         pathCall("/api/pastHomeData", pastHomeData _),
-        pathCall("/api/hello", hello _)
       )
       .withAutoAcl(true)
     // @formatter:on
