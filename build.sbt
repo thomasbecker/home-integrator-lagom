@@ -59,4 +59,5 @@ lazy val `home-integrator-impl` = (project in file("home-integrator-impl"))
     resolvers += Resolver.mavenLocal
   )
   .settings(lagomForkedTestSettings: _*)
+  .settings(BuildTarget.additionalSettings)
   .dependsOn(`home-integrator-api`)
