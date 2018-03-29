@@ -14,9 +14,11 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
 
 private[impl] class HomeDataRepository(session: CassandraSession)(implicit ec: ExecutionContext) {
+
   def getHomeDataSince(timestamp: Int): Future[Seq[HomeData]] = {
-    val timestampInstant = Instant.ofEpochSecond(timestamp)
-    val date = Date.from(timestampInstant)
+
+    val timestampInstant = Instant.ofEpochSecond(timestamp).atZone(ZoneId.systemDefault())
+    val date = Date.from(timestampInstant.toInstant)
     session.selectAll(
       """
         SELECT * FROM homeData WHERE timestamp >= ? ALLOW FILTERING
