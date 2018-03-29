@@ -43,6 +43,7 @@ class HomeIntegratorServiceImpl(system: ActorSystem, persistentEntityRegistry: P
       Source.tick(0 millis, intervalS seconds, "TICK").map((_) => homeCollector.collectData)
     }
     val pastHomeDatas = Await.result(homeDataRepository.getHomeDataSince(from), 100 seconds).to[scala.collection.immutable.Seq]
+    log.info("Found: {} homeDatas. Target size: {}", pastHomeDatas.size, targetSize)
     var source: Source[HomeData, NotUsed] = null
     if (pastHomeDatas.size > targetSize) {
       val chunkSize = pastHomeDatas.size / targetSize
