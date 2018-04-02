@@ -32,7 +32,7 @@ class HomeIntegratorServiceImpl(system: ActorSystem, persistentEntityRegistry: P
     })
   }
 
-  private val targetSize = 100
+  private val targetSize = 40
 
   override def homeDataFilteredByTimestamp(intervalS: Int, from: Int) = ServiceCall { _ =>
     val tickSource = RestartSource.withBackoff(
@@ -42,7 +42,7 @@ class HomeIntegratorServiceImpl(system: ActorSystem, persistentEntityRegistry: P
     ) { () =>
       Source.tick(0 millis, intervalS seconds, "TICK").map((_) => homeCollector.collectData)
     }
-    val pastHomeDatas = Await.result(homeDataRepository.getHomeDataSince(from), 100 seconds).to[scala.collection.immutable.Seq]
+    val pastHomeDatas = Await.result(homeDataRepository.getHomeDataSince(from), 120 seconds).to[scala.collection.immutable.Seq]
     log.info("Found: {} homeDatas. Target size: {}", pastHomeDatas.size, targetSize)
     var source: Source[HomeData, NotUsed] = null
     if (pastHomeDatas.size > targetSize) {
