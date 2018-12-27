@@ -5,8 +5,8 @@ import de.softwareschmied.homedataintegration.HomePowerData
 /**
   * Created by Thomas Becker (thomas.becker00@gmail.com) on 28.03.18.
   */
-class HomeDataMathFunctionsAverageHomeDataTest extends org.specs2.mutable.Specification {
-  val homeDataMathFunctions = new HomeDataMathFunctions
+class HomeDataMathFunctionsAverageHomePowerDataTest extends org.specs2.mutable.Specification {
+  val homeDataMathFunctions = new HomePowerDataMathFunctions
   val homeData = HomePowerData(900.0, 1500.0, Some(600.0), Some(600.0), Some(50.0), 800.0, 599.0, 11111111)
   val homeData2 = HomePowerData(100.0, 1000.0, Some(200.0), Some(400.0), Some(50.0), 300.0, 800.0, 11111111)
   val homeData3 = HomePowerData(800.0, 200.0, Some(300.0), Some(300.0), Some(50.0), 100.0, 900.0, 11111111)

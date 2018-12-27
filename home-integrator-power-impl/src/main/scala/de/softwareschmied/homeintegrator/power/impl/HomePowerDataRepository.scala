@@ -11,7 +11,7 @@ import de.softwareschmied.homedataintegration.{HomePowerData, HomePowerDataJsonS
 
 import scala.concurrent.{ExecutionContext, Future}
 
-private[impl] class HomeDataRepository(session: CassandraSession)(implicit ec: ExecutionContext) {
+private[impl] class HomePowerDataRepository(session: CassandraSession)(implicit ec: ExecutionContext) {
 
   def getHomeDataSince(timestamp: Int): Future[Seq[HomePowerData]] = {
 
@@ -88,7 +88,7 @@ private[impl] class HomeDataEventProcessor(session: CassandraSession, readSide: 
   private def insertHomePowerData(homePowerData: HomePowerData) = {
     //    val r = scala.util.Random;
     //    val partitionKey = r.nextInt(4)
-    val partitionKey = 0 // this avoids partitioning of data and therefore has performance impacts...however for now I'm running a single cassandra note anyhow
+    val partitionKey = 0 // this avoids partitioning of data and therefore has performance impacts...however for now I'm running a single cassandra node anyhow
     val timestamp = Instant.ofEpochMilli(homePowerData.timestamp)
     val date = Date.from(timestamp)
     Future.successful(List(

@@ -8,17 +8,16 @@ import de.softwareschmied.myhomecontrolinterface.MyHomeControlPowerData
 import de.softwareschmied.solarwebinterface.{MeterData, PowerFlowSite}
 import play.api.libs.json.{Format, Json}
 
-object HomePowerIntegratorService {
-  val TOPIC_NAME = "greetings"
+object HomePowerDataService {
 }
 
-trait HomePowerIntegratorService extends Service {
+trait HomePowerDataService extends Service {
 
-  def pastHomeData: ServiceCall[NotUsed, Seq[HomePowerData]]
+  def pastHomePowerData: ServiceCall[NotUsed, Seq[HomePowerData]]
 
-  def homeData(interval: Int): ServiceCall[String, Source[HomePowerData, NotUsed]]
+  def homePowerData(interval: Int): ServiceCall[String, Source[HomePowerData, NotUsed]]
 
-  def homeDataFilteredByTimestamp(interval: Int, from: Int): ServiceCall[String, Source[HomePowerData, NotUsed]]
+  def homePowerDataFilteredByTimestamp(interval: Int, from: Int): ServiceCall[String, Source[HomePowerData, NotUsed]]
 
   implicit val format4: Format[MeterData] = Json.format[MeterData]
   implicit val format2: Format[MyHomeControlPowerData] = Json.format[MyHomeControlPowerData]
@@ -28,14 +27,13 @@ trait HomePowerIntegratorService extends Service {
   override final def descriptor: Descriptor = {
     import Service._
     // @formatter:off
-    named("homeintegratorservice")
+    named("homepowerdataservice")
       .withCalls(
-        pathCall("/api/homePowerData/live/:interval", homeData _),
-        pathCall("/api/homePowerData/:interval?from", homeDataFilteredByTimestamp _),
-        pathCall("/api/pastHomePowerData", pastHomeData _),
+        pathCall("/api/homePowerData/live/:interval", homePowerData _),
+        pathCall("/api/homePowerData/:interval?from", homePowerDataFilteredByTimestamp _),
+        pathCall("/api/pastHomePowerData", pastHomePowerData _),
       )
       .withAutoAcl(true)
     // @formatter:on
   }
-
 }

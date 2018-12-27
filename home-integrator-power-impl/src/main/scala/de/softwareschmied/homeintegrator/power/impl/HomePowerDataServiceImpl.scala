@@ -9,23 +9,26 @@ import akka.stream.scaladsl.{Concat, RestartSource, Sink, Source}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.persistence.PersistentEntityRegistry
 import de.softwareschmied.homedataintegration.{HomePowerCollector, HomePowerData}
-import de.softwareschmied.homeintegratorlagom.api.HomePowerIntegratorService
+import de.softwareschmied.homeintegratorlagom.api.HomePowerDataService
 import org.slf4j.LoggerFactory
 
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-class HomePowerIntegratorServiceImpl(system: ActorSystem, persistentEntityRegistry: PersistentEntityRegistry, homeDataRepository: HomeDataRepository) extends
-  HomePowerIntegratorService {
-  private val log = LoggerFactory.getLogger(classOf[HomePowerIntegratorServiceImpl])
+class HomePowerDataServiceImpl(system: ActorSystem, persistentEntityRegistry: PersistentEntityRegistry, homeDataRepository: HomePowerDataRepository) extends
+  HomePowerDataService {
+  private val log = LoggerFactory.getLogger(classOf[HomePowerDataServiceImpl])
   private val homePowerCollector = new HomePowerCollector
-  private val homeDataMathFunctions = new HomeDataMathFunctions
+  private val homeDataMathFunctions = new HomePowerDataMathFunctions
   private val fetchInterval = system.settings.config.getDuration("fetchInterval", TimeUnit.MILLISECONDS).milliseconds
+  private val minBackoffSeconds = 3.seconds
+  private val maxBackoffSeconds = 120.seconds
 
-  override def homeData(intervalS: Int) = ServiceCall { tickMessage =>
+
+  override def homePowerData(intervalS: Int) = ServiceCall { tickMessage =>
     Future.successful(RestartSource.withBackoff(
-      minBackoff = 3.seconds,
-      maxBackoff = 30.seconds,
+      minBackoff = minBackoffSeconds,
+      maxBackoff = maxBackoffSeconds,
       randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
     ) { () =>
       Source.tick(0 millis, intervalS seconds, "TICK").map((_) => homePowerCollector.collectData)
@@ -34,10 +37,10 @@ class HomePowerIntegratorServiceImpl(system: ActorSystem, persistentEntityRegist
 
   private val targetSize = 40
 
-  override def homeDataFilteredByTimestamp(intervalS: Int, from: Int) = ServiceCall { _ =>
+  override def homePowerDataFilteredByTimestamp(intervalS: Int, from: Int) = ServiceCall { _ =>
     val tickSource = RestartSource.withBackoff(
-      minBackoff = 3.seconds,
-      maxBackoff = 30.seconds,
+      minBackoff = minBackoffSeconds,
+      maxBackoff = maxBackoffSeconds,
       randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
     ) { () =>
       Source.tick(0 millis, intervalS seconds, "TICK").map((_) => homePowerCollector.collectData)
@@ -56,7 +59,7 @@ class HomePowerIntegratorServiceImpl(system: ActorSystem, persistentEntityRegist
     Future.successful(Source.combine(source, tickSource)(Concat(_)))
   }
 
-  override def pastHomeData = ServiceCall {
+  override def pastHomePowerData = ServiceCall {
     _ => homeDataRepository.getHomeDataSince(1515339914)
   }
 }
@@ -69,7 +72,7 @@ class HomePowerDataFetchScheduler(system: ActorSystem, persistentEntityRegistry:
   val homeCollector = new HomePowerCollector
   val source = RestartSource.withBackoff(
     minBackoff = 3.seconds,
-    maxBackoff = 30.seconds,
+    maxBackoff = 120.seconds,
     randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
   ) { () =>
     Source.tick(0 millis, fetchInterval, "TICK").map((_) => homeCollector.collectData)

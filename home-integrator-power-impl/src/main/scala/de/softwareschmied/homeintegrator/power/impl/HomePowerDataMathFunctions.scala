@@ -6,7 +6,7 @@ import de.softwareschmied.homeintegrator.tools.MathFunctions
 /**
   * Created by Thomas Becker (thomas.becker00@gmail.com) on 28.03.18.
   */
-class HomeDataMathFunctions {
+class HomePowerDataMathFunctions {
   def mathFunction = new MathFunctions
 
   def averageHomePowerData(seq: Seq[HomePowerData]): HomePowerData = {
