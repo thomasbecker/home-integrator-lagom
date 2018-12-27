@@ -10,6 +10,9 @@ class HomeEnvironmentDataMathFunctions {
   def mathFunction = new MathFunctions
 
   def averageHomeEnvironmentData(seq: Seq[HomeEnvironmentData]): HomeEnvironmentData = {
+    var officeTempSeq = List[Double]()
+    seq.foreach(x => officeTempSeq = x.officeTemp :: officeTempSeq)
+
     var livingRoomCo2Seq = List[Double]()
     seq.foreach(x => livingRoomCo2Seq = x.livingRoomCo2 :: livingRoomCo2Seq)
     var livingRoomTempSeq = List[Double]()
@@ -24,8 +27,7 @@ class HomeEnvironmentDataMathFunctions {
     var sleepingRoomHumiditySeq = List[Double]()
     seq.foreach(x => sleepingRoomHumiditySeq = x.sleepingRoomHumidity :: sleepingRoomHumiditySeq)
 
-    new HomeEnvironmentData(mathFunction.average(livingRoomCo2Seq), mathFunction.average(livingRoomTempSeq), mathFunction.average(livingRoomHumiditySeq), mathFunction
-      .average(sleepingRoomCo2Seq), mathFunction.average(sleepingRoomTempSeq), mathFunction.average(sleepingRoomHumiditySeq), seq.last.timestamp)
+    new HomeEnvironmentData(mathFunction.average(officeTempSeq), mathFunction.average(livingRoomCo2Seq), mathFunction.average(livingRoomTempSeq), mathFunction.average(livingRoomHumiditySeq), mathFunction.average(sleepingRoomCo2Seq), mathFunction.average(sleepingRoomTempSeq), mathFunction.average(sleepingRoomHumiditySeq), seq.last.timestamp)
   }
 }
 

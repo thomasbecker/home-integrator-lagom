@@ -24,6 +24,7 @@ private[impl] class HomeDataRepository(session: CassandraSession)(implicit ec: E
       rows.map {
         row =>
           HomeEnvironmentData(
+            row.getDouble("officeTemp"),
             row.getDouble("livingRoomCo2"),
             row.getDouble("livingRoomTemp"),
             row.getDouble("livingRoomHumidity"),
@@ -57,6 +58,7 @@ private[impl] class HomeDataEventProcessor(session: CassandraSession, readSide: 
         CREATE TABLE IF NOT EXISTS homeEnvironmentData (
           timestamp timestamp,
           partition_key int,
+          officeTemp double,
           livingRoomCo2 double,
           livingRoomTemp double,
           livingRoomHumidity double,
@@ -73,8 +75,9 @@ private[impl] class HomeDataEventProcessor(session: CassandraSession, readSide: 
     for {
       insertHomeEnvironmentData <- session.prepare(
         """
-        INSERT INTO homeEnvironmentData(timestamp, partition_key, livingRoomCo2, livingRoomTemp, livingRoomHumidity, sleepingRoomCo2, sleepingRoomTemp, sleepingRoomHumidity)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO homeEnvironmentData(timestamp, partition_key, officeTemp, livingRoomCo2, livingRoomTemp, livingRoomHumidity, sleepingRoomCo2,
+        sleepingRoomTemp, sleepingRoomHumidity)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       """)
     } yield {
       insertHomeEnvironmentDataStatement = insertHomeEnvironmentData
@@ -92,6 +95,7 @@ private[impl] class HomeDataEventProcessor(session: CassandraSession, readSide: 
       insertHomeEnvironmentDataStatement.bind(
         date,
         Integer.valueOf(partitionKey),
+        java.lang.Double.valueOf(homeEnvironmentData.officeTemp.toString),
         java.lang.Double.valueOf(homeEnvironmentData.livingRoomCo2.toString),
         java.lang.Double.valueOf(homeEnvironmentData.livingRoomTemp.toString),
         java.lang.Double.valueOf(homeEnvironmentData.livingRoomHumidity.toString),
