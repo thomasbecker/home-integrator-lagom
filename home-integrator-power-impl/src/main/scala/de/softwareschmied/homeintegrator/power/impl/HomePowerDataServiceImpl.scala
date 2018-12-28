@@ -38,6 +38,7 @@ class HomePowerDataServiceImpl(system: ActorSystem, persistentEntityRegistry: Pe
   private val targetSize = 40
 
   override def homePowerDataFilteredByTimestamp(intervalS: Int, from: Int) = ServiceCall { _ =>
+    val start = System.currentTimeMillis()
     val tickSource = RestartSource.withBackoff(
       minBackoff = minBackoffSeconds,
       maxBackoff = maxBackoffSeconds,
@@ -56,6 +57,8 @@ class HomePowerDataServiceImpl(system: ActorSystem, persistentEntityRegistry: Pe
     } else {
       source = Source(pastHomePowerDatas)
     }
+    val end = System.currentTimeMillis()
+    println(s"Got history data in ${end - start} millis.")
     Future.successful(Source.combine(source, tickSource)(Concat(_)))
   }
 
