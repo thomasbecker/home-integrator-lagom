@@ -46,17 +46,16 @@ class HomePowerDataServiceImpl(system: ActorSystem, persistentEntityRegistry: Pe
     ) { () =>
       Source.tick(0 millis, intervalS seconds, "TICK").map((_) => homePowerCollector.collectData)
     }
-    val pastHomePowerDatas = Await.result(homeDataRepository.getHomeDataSince(from), 120 seconds).to[scala.collection.immutable.Seq]
+    var pastHomePowerDatas = Await.result(homeDataRepository.getHomeDataSince(from), 120 seconds).to[scala.collection.immutable.Seq]
     log.info("Found: {} homePowerDatas. Target size: {}", pastHomePowerDatas.size, targetSize)
     var source: Source[HomePowerData, NotUsed] = null
     if (pastHomePowerDatas.size > targetSize) {
       val chunkSize = pastHomePowerDatas.size / targetSize
       val chunkedPastHomeDatas = pastHomePowerDatas.grouped(chunkSize).map(x => homeDataMathFunctions.averageHomePowerData(x)).to[scala.collection.immutable.Seq]
       log.info("Found {} homePowerDatas and divided them to: {} averaged homePowerDatas", pastHomePowerDatas.size, chunkedPastHomeDatas.size)
-      source = Source(chunkedPastHomeDatas)
-    } else {
-      source = Source(pastHomePowerDatas)
+      pastHomePowerDatas = chunkedPastHomeDatas;
     }
+    source = Source(pastHomePowerDatas :+ new HomePowerData(9999.0, 0, None, None, None, 0, 0))
     val end = System.currentTimeMillis()
     println(s"Got history data in ${end - start} millis.")
     Future.successful(Source.combine(source, tickSource)(Concat(_)))

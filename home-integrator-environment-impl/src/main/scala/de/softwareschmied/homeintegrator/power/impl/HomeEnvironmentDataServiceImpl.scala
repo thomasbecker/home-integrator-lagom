@@ -32,7 +32,7 @@ class HomeEnvironmentDataServiceImpl(system: ActorSystem, persistentEntityRegist
     })
   }
 
-  private val targetSize = 40
+  private val targetSize = 500
 
   override def homeEnvironmentDataFilteredByTimestamp(intervalS: Int, from: Int) = ServiceCall { _ =>
     val tickSource = RestartSource.withBackoff(
@@ -42,17 +42,16 @@ class HomeEnvironmentDataServiceImpl(system: ActorSystem, persistentEntityRegist
     ) { () =>
       Source.tick(0 millis, intervalS seconds, "TICK").map((_) => homeEnvironmentCollector.collectData)
     }
-    val pastHomeEnvironmentDatas = Await.result(homeDataRepository.getHomeDataSince(from), 120 seconds).to[scala.collection.immutable.Seq]
+    var pastHomeEnvironmentDatas = Await.result(homeDataRepository.getHomeDataSince(from), 120 seconds).to[scala.collection.immutable.Seq]
     log.info("Found: {} homeEnvironmentDatas. Target size: {}", pastHomeEnvironmentDatas.size, targetSize)
     var source: Source[HomeEnvironmentData, NotUsed] = null
     if (pastHomeEnvironmentDatas.size > targetSize) {
       val chunkSize = pastHomeEnvironmentDatas.size / targetSize
       val chunkedPastHomeDatas = pastHomeEnvironmentDatas.grouped(chunkSize).map(x => homeDataMathFunctions.averageHomeEnvironmentData(x)).to[scala.collection.immutable.Seq]
       log.info("Found {} homeEnvironmentDatas and divided them to: {} averaged homeEnvironmentDatas", pastHomeEnvironmentDatas.size, chunkedPastHomeDatas.size)
-      source = Source(chunkedPastHomeDatas)
-    } else {
-      source = Source(pastHomeEnvironmentDatas)
+      pastHomeEnvironmentDatas = chunkedPastHomeDatas;
     }
+    source = Source(pastHomeEnvironmentDatas :+ new HomeEnvironmentData(9999.0, 0, 0, 0, 0, 0, 0))
     Future.successful(Source.combine(source, tickSource)(Concat(_)))
   }
 
