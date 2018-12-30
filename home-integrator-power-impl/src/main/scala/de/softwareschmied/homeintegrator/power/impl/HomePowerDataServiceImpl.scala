@@ -35,7 +35,7 @@ class HomePowerDataServiceImpl(system: ActorSystem, persistentEntityRegistry: Pe
     })
   }
 
-  private val targetSize = 40
+  private val targetSize = 500
 
   override def homePowerDataFilteredByTimestamp(intervalS: Int, from: Int) = ServiceCall { _ =>
     val start = System.currentTimeMillis()
