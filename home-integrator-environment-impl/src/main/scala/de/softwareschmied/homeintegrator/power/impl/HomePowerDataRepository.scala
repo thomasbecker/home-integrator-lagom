@@ -84,8 +84,8 @@ private[impl] class HomeDataEventProcessor(session: CassandraSession, readSide: 
       insertHomeEnvironmentData <- session.prepare(
         """
         INSERT INTO homeEnvironmentData(timestamp, partition_key, officeTemp, livingRoomCo2, livingRoomTemp, livingRoomHumidity, sleepingRoomCo2,
-        sleepingRoomTemp, sleepingRoomHumidity, heatingLeading, heatingBottom, waterTankMiddle, waterTankBottom)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        sleepingRoomTemp, sleepingRoomHumidity, heatingLeading, heatingInlet, waterTankMiddle, waterTankBottom)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       """)
     } yield {
       insertHomeEnvironmentDataStatement = insertHomeEnvironmentData
