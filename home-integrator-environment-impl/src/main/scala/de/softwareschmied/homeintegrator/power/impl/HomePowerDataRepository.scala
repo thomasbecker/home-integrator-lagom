@@ -31,6 +31,10 @@ private[impl] class HomeDataRepository(session: CassandraSession)(implicit ec: E
             row.getDouble("sleepingRoomCo2"),
             row.getDouble("sleepingRoomTemp"),
             row.getDouble("sleepingRoomHumidity"),
+            row.getDouble("heatingLeading"),
+            row.getDouble("heatingInlet"),
+            row.getDouble("waterTankMiddle"),
+            row.getDouble("waterTankBottom"),
             row.getTimestamp("timestamp").getTime)
       }
     }
@@ -65,6 +69,10 @@ private[impl] class HomeDataEventProcessor(session: CassandraSession, readSide: 
           sleepingRoomCo2 double,
           sleepingRoomTemp double,
           sleepingRoomHumidity double,
+          heatingLeading double,
+          heatingInlet double,
+          waterTankMiddle double,
+          waterTankBottom double,
           PRIMARY KEY (partition_key, timestamp)
         )
       """)
@@ -76,7 +84,7 @@ private[impl] class HomeDataEventProcessor(session: CassandraSession, readSide: 
       insertHomeEnvironmentData <- session.prepare(
         """
         INSERT INTO homeEnvironmentData(timestamp, partition_key, officeTemp, livingRoomCo2, livingRoomTemp, livingRoomHumidity, sleepingRoomCo2,
-        sleepingRoomTemp, sleepingRoomHumidity)
+        sleepingRoomTemp, sleepingRoomHumidity, heatingLeading, heatingBottom, waterTankMiddle, waterTankBottom)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       """)
     } yield {
@@ -101,7 +109,11 @@ private[impl] class HomeDataEventProcessor(session: CassandraSession, readSide: 
         java.lang.Double.valueOf(homeEnvironmentData.livingRoomHumidity.toString),
         java.lang.Double.valueOf(homeEnvironmentData.sleepingRoomCo2.toString),
         java.lang.Double.valueOf(homeEnvironmentData.sleepingRoomTemp.toString),
-        java.lang.Double.valueOf(homeEnvironmentData.sleepingRoomHumidity.toString)
+        java.lang.Double.valueOf(homeEnvironmentData.sleepingRoomHumidity.toString),
+        java.lang.Double.valueOf(homeEnvironmentData.heatingLeading.toString),
+        java.lang.Double.valueOf(homeEnvironmentData.heatingInlet.toString),
+        java.lang.Double.valueOf(homeEnvironmentData.waterTankMiddle.toString),
+        java.lang.Double.valueOf(homeEnvironmentData.waterTankBottom.toString)
       )))
   }
 

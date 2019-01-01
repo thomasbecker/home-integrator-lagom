@@ -27,7 +27,20 @@ class HomeEnvironmentDataMathFunctions {
     var sleepingRoomHumiditySeq = List[Double]()
     seq.foreach(x => sleepingRoomHumiditySeq = x.sleepingRoomHumidity :: sleepingRoomHumiditySeq)
 
-    new HomeEnvironmentData(mathFunction.average(officeTempSeq), mathFunction.average(livingRoomCo2Seq), mathFunction.average(livingRoomTempSeq), mathFunction.average(livingRoomHumiditySeq), mathFunction.average(sleepingRoomCo2Seq), mathFunction.average(sleepingRoomTempSeq), mathFunction.average(sleepingRoomHumiditySeq), seq.last.timestamp)
+    var heatingLeadingSeq = List[Double]()
+    seq.foreach(x => heatingLeadingSeq = x.heatingLeading :: heatingLeadingSeq)
+    var heatingInletSeq = List[Double]()
+    seq.foreach(x => heatingInletSeq = x.heatingInlet :: heatingInletSeq)
+    var waterTankMiddleSeq = List[Double]()
+    seq.foreach(x => waterTankMiddleSeq = x.waterTankMiddle :: waterTankMiddleSeq)
+    var waterTankBottomSeq = List[Double]()
+    seq.foreach(x => waterTankBottomSeq = x.waterTankBottom :: waterTankBottomSeq)
+
+    new HomeEnvironmentData(mathFunction.average(officeTempSeq), mathFunction.average(livingRoomCo2Seq), mathFunction.average(livingRoomTempSeq),
+      mathFunction.average(livingRoomHumiditySeq), mathFunction.average(sleepingRoomCo2Seq), mathFunction.average(sleepingRoomTempSeq), mathFunction.average
+      (sleepingRoomHumiditySeq), mathFunction.average(heatingLeadingSeq), mathFunction.average(heatingInletSeq), mathFunction.average(waterTankMiddleSeq),
+      mathFunction.average(waterTankBottomSeq), seq.last.timestamp)
   }
+
 }
 
