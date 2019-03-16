@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-class HomeEnvironmentDataServiceImpl(system: ActorSystem, persistentEntityRegistry: PersistentEntityRegistry, homeDataRepository: HomeDataRepository) extends
+class HomeEnvironmentDataServiceImpl(system: ActorSystem, persistentEntityRegistry: PersistentEntityRegistry, homeDataRepository: HomeEnvironmentDataRepository) extends
   HomeEnvironmentDataService {
   private val log = LoggerFactory.getLogger(classOf[HomeEnvironmentDataServiceImpl])
   private val homeEnvironmentCollector = new HomeEnvironmentCollector

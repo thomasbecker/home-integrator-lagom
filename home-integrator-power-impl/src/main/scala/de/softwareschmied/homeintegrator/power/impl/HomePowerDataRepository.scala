@@ -1,7 +1,7 @@
 package de.softwareschmied.homeintegrator.power.impl
 
 import java.time.{Instant, ZoneId}
-import java.util.Date
+import java.util.{Date, TimeZone}
 
 import akka.Done
 import com.datastax.driver.core._
@@ -57,7 +57,9 @@ private[impl] class HomeDataEventProcessor(session: CassandraSession, readSide: 
         """
         CREATE TABLE IF NOT EXISTS homePowerData (
           timestamp timestamp,
-          partition_key int,
+          day smallint,
+          month smallint,
+          year smallint,
           powerGrid double,
           powerLoad double,
           powerPv double,
@@ -65,7 +67,7 @@ private[impl] class HomeDataEventProcessor(session: CassandraSession, readSide: 
           autonomy double,
           heatpumpCurrentPowerConsumption double,
           heatpumpCumulativePowerConsumption double,
-          PRIMARY KEY (partition_key, timestamp)
+          PRIMARY KEY (day, month, year, timestamp)
         )
       """)
     } yield Done
@@ -75,9 +77,9 @@ private[impl] class HomeDataEventProcessor(session: CassandraSession, readSide: 
     for {
       insertHomePowerData <- session.prepare(
         """
-        INSERT INTO homePowerData(timestamp, partition_key, powerGrid, powerLoad, powerPv, selfConsumption, autonomy, heatpumpCurrentPowerConsumption,
+        INSERT INTO homePowerData(timestamp, day, month, year, powerGrid, powerLoad, powerPv, selfConsumption, autonomy, heatpumpCurrentPowerConsumption,
         heatpumpCumulativePowerConsumption)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       """)
     } yield {
       insertHomePowerDataStatement = insertHomePowerData
@@ -85,16 +87,22 @@ private[impl] class HomeDataEventProcessor(session: CassandraSession, readSide: 
     }
   }
 
+  implicit def int2Integer(x: Int) =
+    java.lang.Integer.valueOf(x)
+
   private def insertHomePowerData(homePowerData: HomePowerData) = {
     //    val r = scala.util.Random;
     //    val partitionKey = r.nextInt(4)
     val partitionKey = 0 // this avoids partitioning of data and therefore has performance impacts...however for now I'm running a single cassandra node anyhow
     val timestamp = Instant.ofEpochMilli(homePowerData.timestamp)
     val date = Date.from(timestamp)
+    val localDate = java.time.LocalDateTime.ofInstant(timestamp, TimeZone.getDefault.toZoneId).toLocalDate
     Future.successful(List(
       insertHomePowerDataStatement.bind(
         date,
-        Integer.valueOf(partitionKey),
+        java.lang.Short.valueOf(localDate.getDayOfMonth.toShort),
+        java.lang.Short.valueOf(localDate.getMonth.getValue.toShort),
+        java.lang.Short.valueOf(localDate.getYear.toShort),
         java.lang.Double.valueOf(homePowerData.powerGrid.toString),
         java.lang.Double.valueOf(homePowerData.powerLoad.toString),
         java.lang.Double.valueOf(homePowerData.powerPv.getOrElse(0).toString),

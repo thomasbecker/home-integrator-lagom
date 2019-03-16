@@ -1,2 +1,2 @@
 // The Lagom plugin
-addSbtPlugin("com.lightbend.lagom" % "lagom-sbt-plugin" % "1.4.9")
+addSbtPlugin("com.lightbend.lagom" % "lagom-sbt-plugin" % "1.4.11")

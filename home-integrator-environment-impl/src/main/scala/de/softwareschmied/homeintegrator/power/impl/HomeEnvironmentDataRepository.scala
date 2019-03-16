@@ -11,7 +11,7 @@ import de.softwareschmied.homedataintegration.{HomeEnvironmentData, HomeEnvironm
 
 import scala.concurrent.{ExecutionContext, Future}
 
-private[impl] class HomeDataRepository(session: CassandraSession)(implicit ec: ExecutionContext) {
+private[impl] class HomeEnvironmentDataRepository(session: CassandraSession)(implicit ec: ExecutionContext) {
 
   def getHomeDataSince(timestamp: Int): Future[Seq[HomeEnvironmentData]] = {
 
@@ -41,7 +41,7 @@ private[impl] class HomeDataRepository(session: CassandraSession)(implicit ec: E
   }
 }
 
-private[impl] class HomeDataEventProcessor(session: CassandraSession, readSide: CassandraReadSide)(implicit ec: ExecutionContext)
+private[impl] class HomeEnvironmentDataEventProcessor(session: CassandraSession, readSide: CassandraReadSide)(implicit ec: ExecutionContext)
   extends ReadSideProcessor[HomeEnvironmentDataEvent] with HomeEnvironmentDataJsonSupport {
   private var insertHomeEnvironmentDataStatement: PreparedStatement = _
 

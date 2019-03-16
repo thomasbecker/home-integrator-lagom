@@ -18,10 +18,10 @@ abstract class HomeEnvironmentDataApplication(context: LagomApplicationContext)
   // Bind the service that this server provides
   override lazy val lagomServer: LagomServer = serverFor[HomeEnvironmentDataService](wire[HomeEnvironmentDataServiceImpl])
   override lazy val jsonSerializerRegistry: HomeEnvironmentDataSerializerRegistry.type = HomeEnvironmentDataSerializerRegistry
-  lazy val homeDataRepository: HomeDataRepository = wire[HomeDataRepository]
+  lazy val homeDataRepository: HomeEnvironmentDataRepository = wire[HomeEnvironmentDataRepository]
 
   persistentEntityRegistry.register(wire[HomeEnvironmentDataEntity])
-  readSide.register(wire[HomeDataEventProcessor])
+  readSide.register(wire[HomeEnvironmentDataEventProcessor])
   wire[HomeEnvironmentDataFetchScheduler]
 }
 
