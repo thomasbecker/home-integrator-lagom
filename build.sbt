@@ -113,4 +113,7 @@ lazy val `home-integrator-power-impl` = (project in file("home-integrator-power-
 //if(BuildTarget.additionalSettings instanceof BuildTarget.Unmanaged.type){
 lagomKafkaEnabled in ThisBuild := false
 lagomKafkaAddress in ThisBuild := "192.168.188.55:9092"
+//lagomCassandraYamlFile in ThisBuild := Some((baseDirectory in ThisBuild).value / "project" / "cassandra.yaml")
+lagomCassandraEnabled in ThisBuild := false
+lagomUnmanagedServices in ThisBuild := Map("cas_native" -> "http://localhost:9042")
 //}

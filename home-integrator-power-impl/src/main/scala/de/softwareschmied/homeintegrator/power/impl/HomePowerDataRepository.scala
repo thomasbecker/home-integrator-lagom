@@ -8,6 +8,7 @@ import com.datastax.driver.core._
 import com.lightbend.lagom.scaladsl.persistence.ReadSideProcessor
 import com.lightbend.lagom.scaladsl.persistence.cassandra.{CassandraReadSide, CassandraSession}
 import de.softwareschmied.homedataintegration.{HomePowerData, HomePowerDataJsonSupport}
+import de.softwareschmied.homeintegrator.power.api.HeatPumpPvCoverage
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -35,11 +36,27 @@ private[impl] class HomePowerDataRepository(session: CassandraSession)(implicit 
       }
     }
   }
+
+  def getHeatpumpPvCoverage(month: Int, year: Int): Future[Seq[Tuple2[Short, HeatPumpPvCoverage]]] = {
+    // aggregating lots of rows on cassandra side is okish performance wise...maybe I should prefer maintaining some additional tables for the aggregates
+    // needes. This will make querying way faster as it moves the aggregation to the write side
+    session.selectAll(
+      """
+        SELECT day, month, year, avg(consumption) as consumption, avg(pv) as pv, avg(coveredByPv) as coveredByPv FROM
+        heatPumpPvCoverageByMonth WHERE month=? AND year=? GROUP BY day
+      """, java.lang.Short.valueOf(month.toShort), java.lang.Short.valueOf(year.toShort)).map { rows =>
+      rows.map {
+        row =>
+          (row.getShort("day"), HeatPumpPvCoverage(row.getDouble("consumption"), row.getDouble("coveredByPv"), row.getDouble("pv")))
+      }
+    }
+  }
 }
 
-private[impl] class HomeDataEventProcessor(session: CassandraSession, readSide: CassandraReadSide)(implicit ec: ExecutionContext)
+private[impl] class HomePowerDataEventProcessor(session: CassandraSession, readSide: CassandraReadSide)(implicit ec: ExecutionContext)
   extends ReadSideProcessor[HomePowerDataEvent] with HomePowerDataJsonSupport {
   private var insertHomePowerDataStatement: PreparedStatement = _
+  private var insertHeatPumpPvCoverageByMonthStatement: PreparedStatement = _
 
   override def buildHandler: ReadSideProcessor.ReadSideHandler[HomePowerDataEvent] = {
     readSide.builder[HomePowerDataEvent]("homePowerDataEventOffset")
@@ -56,10 +73,8 @@ private[impl] class HomeDataEventProcessor(session: CassandraSession, readSide: 
       _ <- session.executeCreateTable(
         """
         CREATE TABLE IF NOT EXISTS homePowerData (
+          partition_key int,
           timestamp timestamp,
-          day smallint,
-          month smallint,
-          year smallint,
           powerGrid double,
           powerLoad double,
           powerPv double,
@@ -67,9 +82,36 @@ private[impl] class HomeDataEventProcessor(session: CassandraSession, readSide: 
           autonomy double,
           heatpumpCurrentPowerConsumption double,
           heatpumpCumulativePowerConsumption double,
-          PRIMARY KEY (day, month, year, timestamp)
+          PRIMARY KEY (partition_key, timestamp)
         )
       """)
+      _ <- session.executeCreateTable(
+        """
+        CREATE TABLE IF NOT EXISTS heatPumpPvCoverageByMonth (
+          day smallint,
+          month smallint,
+          year smallint,
+          timestamp timestamp,
+          pv double,
+          consumption double,
+          coveredByPv double,
+          PRIMARY KEY ((month, year), day, timestamp)
+        )
+      """)
+      //      _ <- session.executeCreateTable(
+      //        """CREATE OR REPLACE FUNCTION heatpumpPv (consumption double, pv double)
+      //          CALLED ON NULL INPUT RETURNS double LANGUAGE java AS
+      //          $$
+      //            if(pv > 0){
+      //              if(consumption > pv)
+      //                return pv;
+      //              else
+      //                return consumption;
+      //            } else {
+      //              return 0.0;
+      //            }
+      //          $$;"""
+      //      )
     } yield Done
   }
 
@@ -77,39 +119,57 @@ private[impl] class HomeDataEventProcessor(session: CassandraSession, readSide: 
     for {
       insertHomePowerData <- session.prepare(
         """
-        INSERT INTO homePowerData(timestamp, day, month, year, powerGrid, powerLoad, powerPv, selfConsumption, autonomy, heatpumpCurrentPowerConsumption,
+        INSERT INTO homePowerData(timestamp, partition_key, powerGrid, powerLoad, powerPv, selfConsumption, autonomy, heatpumpCurrentPowerConsumption,
         heatpumpCumulativePowerConsumption)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       """)
+      insertHeatPumpPvCoverageByMonth <- session.prepare(
+        """
+          INSERT INTO heatPumpPvCoverageByMonth(day, month, year, timestamp, pv, consumption, coveredByPv) VALUES (?, ?, ?, ?, ?, ?, ?)
+        """
+      )
     } yield {
       insertHomePowerDataStatement = insertHomePowerData
+      insertHeatPumpPvCoverageByMonthStatement = insertHeatPumpPvCoverageByMonth
       Done
     }
   }
 
-  implicit def int2Integer(x: Int) =
-    java.lang.Integer.valueOf(x)
-
   private def insertHomePowerData(homePowerData: HomePowerData) = {
-    //    val r = scala.util.Random;
-    //    val partitionKey = r.nextInt(4)
     val partitionKey = 0 // this avoids partitioning of data and therefore has performance impacts...however for now I'm running a single cassandra node anyhow
     val timestamp = Instant.ofEpochMilli(homePowerData.timestamp)
     val date = Date.from(timestamp)
     val localDate = java.time.LocalDateTime.ofInstant(timestamp, TimeZone.getDefault.toZoneId).toLocalDate
-    Future.successful(List(
-      insertHomePowerDataStatement.bind(
-        date,
-        java.lang.Short.valueOf(localDate.getDayOfMonth.toShort),
-        java.lang.Short.valueOf(localDate.getMonth.getValue.toShort),
-        java.lang.Short.valueOf(localDate.getYear.toShort),
-        java.lang.Double.valueOf(homePowerData.powerGrid.toString),
-        java.lang.Double.valueOf(homePowerData.powerLoad.toString),
-        java.lang.Double.valueOf(homePowerData.powerPv.getOrElse(0).toString),
-        java.lang.Double.valueOf(homePowerData.selfConsumption.getOrElse(0).toString),
-        java.lang.Double.valueOf(homePowerData.autonomy.getOrElse(0).toString),
-        java.lang.Double.valueOf(homePowerData.heatpumpCurrentPowerConsumption.toString),
-        java.lang.Double.valueOf(homePowerData.heatpumpCumulativePowerConsumption.toString))))
+    val heatpumpConsumption = homePowerData.heatpumpCurrentPowerConsumption * 1000
+    val pv: Double = homePowerData.powerPv.getOrElse(0.0)
+    val coveredByPv = calculateCoveredByPv(heatpumpConsumption, pv)
+    val bindInsertHomePowerData = insertHomePowerDataStatement.bind()
+    bindInsertHomePowerData.setTimestamp("timestamp", date)
+    bindInsertHomePowerData.setInt("partition_key", partitionKey)
+    bindInsertHomePowerData.setDouble("powerGrid", homePowerData.powerGrid)
+    bindInsertHomePowerData.setDouble("powerLoad", homePowerData.powerLoad)
+    bindInsertHomePowerData.setDouble("powerPv", pv)
+    bindInsertHomePowerData.setDouble("selfConsumption", homePowerData.selfConsumption.getOrElse(0.0))
+    bindInsertHomePowerData.setDouble("autonomy", homePowerData.autonomy.getOrElse(0.0))
+    bindInsertHomePowerData.setDouble("heatpumpCurrentPowerConsumption", homePowerData.heatpumpCurrentPowerConsumption)
+    bindInsertHomePowerData.setDouble("heatPumpCumulativePowerConsumption", homePowerData.heatpumpCumulativePowerConsumption)
+    val bindInsertHeatPumpPvCoverageByMonth = insertHeatPumpPvCoverageByMonthStatement.bind()
+    bindInsertHeatPumpPvCoverageByMonth.setShort("day", localDate.getDayOfMonth.toShort)
+    bindInsertHeatPumpPvCoverageByMonth.setShort("month", localDate.getMonth.getValue.toShort)
+    bindInsertHeatPumpPvCoverageByMonth.setShort("year", localDate.getYear.toShort)
+    bindInsertHeatPumpPvCoverageByMonth.setTimestamp("timestamp", date)
+    bindInsertHeatPumpPvCoverageByMonth.setDouble("pv", pv)
+    bindInsertHeatPumpPvCoverageByMonth.setDouble("consumption", heatpumpConsumption)
+    bindInsertHeatPumpPvCoverageByMonth.setDouble("coveredByPv", calculateCoveredByPv(heatpumpConsumption, pv))
+    Future.successful(List(bindInsertHeatPumpPvCoverageByMonth, bindInsertHomePowerData))
   }
 
+  private def calculateCoveredByPv(consumption: Double, pv: Double): Double = {
+    if (pv == 0.0)
+      0.0
+    else if (consumption > pv)
+      pv
+    else
+      consumption
+  }
 }

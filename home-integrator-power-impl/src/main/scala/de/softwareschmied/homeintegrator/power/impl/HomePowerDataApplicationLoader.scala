@@ -21,7 +21,7 @@ abstract class HomePowerDataApplication(context: LagomApplicationContext)
   lazy val homePowerDataRepository: HomePowerDataRepository = wire[HomePowerDataRepository]
 
   persistentEntityRegistry.register(wire[HomePowerDataEntity])
-  readSide.register(wire[HomeDataEventProcessor])
+  readSide.register(wire[HomePowerDataEventProcessor])
   wire[HomePowerDataFetchScheduler]
 }
 
