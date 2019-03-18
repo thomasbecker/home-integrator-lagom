@@ -66,7 +66,7 @@ class HomePowerDataServiceImpl(system: ActorSystem, persistentEntityRegistry: Pe
     _ => homeDataRepository.getHomeDataSince(1515339914)
   }
 
-  override def heatPumpPvCoverage(year: Int, month: Int): ServiceCall[NotUsed, Seq[Tuple2[Short, HeatPumpPvCoverage]]] = {
+  override def heatPumpPvCoverage(year: Int, month: Int): ServiceCall[NotUsed, Seq[Tuple2[Long, HeatPumpPvCoverage]]] = {
     _ => homeDataRepository.getHeatpumpPvCoverage(month, year)
   }
 }

@@ -18,7 +18,7 @@ trait HomePowerDataService extends Service {
 
   def homePowerDataFilteredByTimestamp(interval: Int, from: Int): ServiceCall[String, Source[HomePowerData, NotUsed]]
 
-  def heatPumpPvCoverage(year: Int, month: Int): ServiceCall[NotUsed, Seq[Tuple2[Short, HeatPumpPvCoverage]]]
+  def heatPumpPvCoverage(year: Int, month: Int): ServiceCall[NotUsed, Seq[Tuple2[Long, HeatPumpPvCoverage]]]
 
   //  implicit val meterDataFormat: Format[MeterData] = Json.format[MeterData]
   //  implicit val myHomeControlPowerDataFormat: Format[MyHomeControlPowerData] = Json.format[MyHomeControlPowerData]

@@ -37,17 +37,16 @@ private[impl] class HomePowerDataRepository(session: CassandraSession)(implicit 
     }
   }
 
-  def getHeatpumpPvCoverage(month: Int, year: Int): Future[Seq[Tuple2[Short, HeatPumpPvCoverage]]] = {
+  def getHeatpumpPvCoverage(month: Int, year: Int): Future[Seq[Tuple2[Long, HeatPumpPvCoverage]]] = {
     // aggregating lots of rows on cassandra side is okish performance wise...maybe I should prefer maintaining some additional tables for the aggregates
     // needes. This will make querying way faster as it moves the aggregation to the write side
     session.selectAll(
       """
-        SELECT day, month, year, avg(consumption) as consumption, avg(pv) as pv, avg(coveredByPv) as coveredByPv FROM
-        heatPumpPvCoverageByMonth WHERE month=? AND year=? GROUP BY day
+        SELECT timestamp, avg(consumption) as consumption, avg(pv) as pv, avg(coveredByPv) as coveredByPv FROM heatPumpPvCoverageByMonth WHERE month=? AND year=? GROUP BY day
       """, java.lang.Short.valueOf(month.toShort), java.lang.Short.valueOf(year.toShort)).map { rows =>
       rows.map {
         row =>
-          (row.getShort("day"), HeatPumpPvCoverage(row.getDouble("consumption"), row.getDouble("coveredByPv"), row.getDouble("pv")))
+          (row.getTimestamp("timestamp").getTime, HeatPumpPvCoverage(row.getDouble("consumption"), row.getDouble("coveredByPv"), row.getDouble("pv")))
       }
     }
   }

@@ -99,6 +99,7 @@ lazy val `home-integrator-power-impl` = (project in file("home-integrator-power-
       lagomJavadslJackson,
       lagomJavadslClient,
       lagomScaladslTestKit,
+      filters,
       "com.datastax.cassandra" % "cassandra-driver-extras" % "3.0.0",
       macwire,
       scalaTest,
