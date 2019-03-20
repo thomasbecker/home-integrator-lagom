@@ -67,7 +67,7 @@ class HomePowerDataServiceImpl(system: ActorSystem, persistentEntityRegistry: Pe
   }
 
   override def heatpumpPvCoverage(year: Int, month: Int): ServiceCall[NotUsed, Seq[DayHeatpumpPvCoverage]] = {
-    _ => homeDataRepository.getHeatpumpPvCoverage(month, year)
+    _ => homeDataRepository.getHeatpumpPvCoverageByMonth(month, year)
   }
 }
 
