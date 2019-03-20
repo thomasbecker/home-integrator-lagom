@@ -9,7 +9,7 @@ import akka.stream.scaladsl.{Concat, RestartSource, Sink, Source}
 import com.lightbend.lagom.scaladsl.api.ServiceCall
 import com.lightbend.lagom.scaladsl.persistence.PersistentEntityRegistry
 import de.softwareschmied.homedataintegration.{HomePowerCollector, HomePowerData}
-import de.softwareschmied.homeintegrator.power.api.HeatPumpPvCoverage
+import de.softwareschmied.homeintegrator.power.api.DayHeatpumpPvCoverage
 import de.softwareschmied.homeintegratorlagom.api.HomePowerDataService
 import org.slf4j.LoggerFactory
 
@@ -66,7 +66,7 @@ class HomePowerDataServiceImpl(system: ActorSystem, persistentEntityRegistry: Pe
     _ => homeDataRepository.getHomeDataSince(1515339914)
   }
 
-  override def heatPumpPvCoverage(year: Int, month: Int): ServiceCall[NotUsed, Seq[Tuple2[Long, HeatPumpPvCoverage]]] = {
+  override def heatpumpPvCoverage(year: Int, month: Int): ServiceCall[NotUsed, Seq[DayHeatpumpPvCoverage]] = {
     _ => homeDataRepository.getHeatpumpPvCoverage(month, year)
   }
 }

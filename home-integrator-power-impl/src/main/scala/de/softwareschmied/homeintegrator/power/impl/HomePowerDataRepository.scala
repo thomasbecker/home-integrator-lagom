@@ -8,7 +8,7 @@ import com.datastax.driver.core._
 import com.lightbend.lagom.scaladsl.persistence.ReadSideProcessor
 import com.lightbend.lagom.scaladsl.persistence.cassandra.{CassandraReadSide, CassandraSession}
 import de.softwareschmied.homedataintegration.{HomePowerData, HomePowerDataJsonSupport}
-import de.softwareschmied.homeintegrator.power.api.HeatPumpPvCoverage
+import de.softwareschmied.homeintegrator.power.api.{DayHeatpumpPvCoverage, HeatpumpPvCoverage}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -37,7 +37,7 @@ private[impl] class HomePowerDataRepository(session: CassandraSession)(implicit 
     }
   }
 
-  def getHeatpumpPvCoverage(month: Int, year: Int): Future[Seq[Tuple2[Long, HeatPumpPvCoverage]]] = {
+  def getHeatpumpPvCoverage(month: Int, year: Int): Future[Seq[DayHeatpumpPvCoverage]] = {
     // aggregating lots of rows on cassandra side is okish performance wise...maybe I should prefer maintaining some additional tables for the aggregates
     // needes. This will make querying way faster as it moves the aggregation to the write side
     session.selectAll(
@@ -46,7 +46,7 @@ private[impl] class HomePowerDataRepository(session: CassandraSession)(implicit 
       """, java.lang.Short.valueOf(month.toShort), java.lang.Short.valueOf(year.toShort)).map { rows =>
       rows.map {
         row =>
-          (row.getTimestamp("timestamp").getTime, HeatPumpPvCoverage(row.getDouble("consumption"), row.getDouble("coveredByPv"), row.getDouble("pv")))
+          DayHeatpumpPvCoverage(row.getTimestamp("timestamp").getTime, HeatpumpPvCoverage(row.getDouble("consumption"), row.getDouble("coveredByPv"), row.getDouble("pv")))
       }
     }
   }
