@@ -1,5 +1,6 @@
 package de.softwareschmied.homeintegrator.power.impl
 
+import java.time
 import java.time.{Instant, ZoneId}
 import java.util.{Date, TimeZone}
 
@@ -10,7 +11,7 @@ import com.lightbend.lagom.scaladsl.persistence.cassandra.{CassandraReadSide, Ca
 import de.softwareschmied.homedataintegration.{HomePowerData, HomePowerDataJsonSupport}
 import de.softwareschmied.homeintegrator.power.api.{DayHeatpumpPvCoverage, HeatpumpPvCoverage}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 private[impl] class HomePowerDataRepository(session: CassandraSession)(implicit ec: ExecutionContext) {
 
@@ -54,8 +55,14 @@ private[impl] class HomePowerDataRepository(session: CassandraSession)(implicit 
 
 private[impl] class HomePowerDataEventProcessor(session: CassandraSession, readSide: CassandraReadSide)(implicit ec: ExecutionContext)
   extends ReadSideProcessor[HomePowerDataEvent] with HomePowerDataJsonSupport {
-  private var insertHomePowerDataStatement: PreparedStatement = _
-  private var insertHeatPumpPvCoverageByMonthStatement: PreparedStatement = _
+
+  private val insertHomePowerDataPromise = Promise[PreparedStatement]
+
+  private def insertHomePowerDataCreator: Future[PreparedStatement] = insertHomePowerDataPromise.future
+
+  private val insertHeatPumpPvCoverageByMonthPromise = Promise[PreparedStatement]
+
+  private def insertHeatPumpPvCoverageByMonthCreator: Future[PreparedStatement] = insertHeatPumpPvCoverageByMonthPromise.future
 
   override def buildHandler: ReadSideProcessor.ReadSideHandler[HomePowerDataEvent] = {
     readSide.builder[HomePowerDataEvent]("homePowerDataEventOffset")
@@ -97,6 +104,56 @@ private[impl] class HomePowerDataEventProcessor(session: CassandraSession, readS
           PRIMARY KEY ((month, year), day, timestamp)
         )
       """)
+      _ <- session.executeCreateTable(
+        """
+        CREATE TABLE IF NOT EXISTS heatPumpPvCoverageByHour (
+          hour smallint,
+          timestamp timestamp,
+          pv double,
+          consumption double,
+          coveredByPv double,
+          total double,
+          PRIMARY KEY (hour, timestamp)
+        )
+      """)
+      _ <- session.executeCreateTable(
+        """
+        CREATE TABLE IF NOT EXISTS heatPumpPvCoverageByDay (
+          hour smallint,
+          day smallint,
+          pv double,
+          consumption double,
+          coveredByPv double,
+          total double,
+          PRIMARY KEY (day, hour)
+        )
+      """)
+      _ <- session.executeCreateTable(
+        """
+        CREATE TABLE IF NOT EXISTS heatPumpPvCoverageByMonth (
+          day smallint,
+          month smallint,
+          timestamp timestamp,
+          pv double,
+          consumption double,
+          coveredByPv double,
+          total double,
+          PRIMARY KEY (month, day)
+        )
+      """)
+      _ <- session.executeCreateTable(
+        """
+        CREATE TABLE IF NOT EXISTS heatPumpPvCoverageByYear (
+          month smallint,
+          year smallint,
+          timestamp timestamp,
+          pv double,
+          consumption double,
+          coveredByPv double,
+          total double,
+          PRIMARY KEY (year, month)
+        )
+      """)
       //      _ <- session.executeCreateTable(
       //        """CREATE OR REPLACE FUNCTION heatpumpPv (consumption double, pv double)
       //          CALLED ON NULL INPUT RETURNS double LANGUAGE java AS
@@ -115,52 +172,69 @@ private[impl] class HomePowerDataEventProcessor(session: CassandraSession, readS
   }
 
   private def prepareStatements() = {
-    for {
-      insertHomePowerData <- session.prepare(
-        """
+    val insertHomePowerDataFuture = session.prepare(
+      """
         INSERT INTO homePowerData(timestamp, partition_key, powerGrid, powerLoad, powerPv, selfConsumption, autonomy, heatpumpCurrentPowerConsumption,
         heatpumpCumulativePowerConsumption)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       """)
-      insertHeatPumpPvCoverageByMonth <- session.prepare(
-        """
+    insertHomePowerDataPromise.completeWith(insertHomePowerDataFuture)
+    val insertHeatPumpPvCoverageByMonthFuture = session.prepare(
+      """
           INSERT INTO heatPumpPvCoverageByMonth(day, month, year, timestamp, pv, consumption, coveredByPv) VALUES (?, ?, ?, ?, ?, ?, ?)
         """
-      )
-    } yield {
-      insertHomePowerDataStatement = insertHomePowerData
-      insertHeatPumpPvCoverageByMonthStatement = insertHeatPumpPvCoverageByMonth
-      Done
-    }
+    )
+    insertHeatPumpPvCoverageByMonthPromise.completeWith(insertHeatPumpPvCoverageByMonthFuture)
+
+    for {
+      _ <- insertHomePowerDataFuture
+      _ <- insertHeatPumpPvCoverageByMonthFuture
+    } yield Done
   }
 
   private def insertHomePowerData(homePowerData: HomePowerData) = {
-    val partitionKey = 0 // this avoids partitioning of data and therefore has performance impacts...however for now I'm running a single cassandra node anyhow
     val timestamp = Instant.ofEpochMilli(homePowerData.timestamp)
     val date = Date.from(timestamp)
-    val localDate = java.time.LocalDateTime.ofInstant(timestamp, TimeZone.getDefault.toZoneId).toLocalDate
+    val localDate: time.LocalDate = java.time.LocalDateTime.ofInstant(timestamp, TimeZone.getDefault.toZoneId).toLocalDate
     val heatpumpConsumption = homePowerData.heatpumpCurrentPowerConsumption * 1000
     val pv: Double = homePowerData.powerPv.getOrElse(0.0)
     val coveredByPv = calculateCoveredByPv(heatpumpConsumption, pv)
-    val bindInsertHomePowerData = insertHomePowerDataStatement.bind()
-    bindInsertHomePowerData.setTimestamp("timestamp", date)
-    bindInsertHomePowerData.setInt("partition_key", partitionKey)
-    bindInsertHomePowerData.setDouble("powerGrid", homePowerData.powerGrid)
-    bindInsertHomePowerData.setDouble("powerLoad", homePowerData.powerLoad)
-    bindInsertHomePowerData.setDouble("powerPv", pv)
-    bindInsertHomePowerData.setDouble("selfConsumption", homePowerData.selfConsumption.getOrElse(0.0))
-    bindInsertHomePowerData.setDouble("autonomy", homePowerData.autonomy.getOrElse(0.0))
-    bindInsertHomePowerData.setDouble("heatpumpCurrentPowerConsumption", homePowerData.heatpumpCurrentPowerConsumption)
-    bindInsertHomePowerData.setDouble("heatPumpCumulativePowerConsumption", homePowerData.heatpumpCumulativePowerConsumption)
-    val bindInsertHeatPumpPvCoverageByMonth = insertHeatPumpPvCoverageByMonthStatement.bind()
-    bindInsertHeatPumpPvCoverageByMonth.setShort("day", localDate.getDayOfMonth.toShort)
-    bindInsertHeatPumpPvCoverageByMonth.setShort("month", localDate.getMonth.getValue.toShort)
-    bindInsertHeatPumpPvCoverageByMonth.setShort("year", localDate.getYear.toShort)
-    bindInsertHeatPumpPvCoverageByMonth.setTimestamp("timestamp", date)
-    bindInsertHeatPumpPvCoverageByMonth.setDouble("pv", pv)
-    bindInsertHeatPumpPvCoverageByMonth.setDouble("consumption", heatpumpConsumption)
-    bindInsertHeatPumpPvCoverageByMonth.setDouble("coveredByPv", calculateCoveredByPv(heatpumpConsumption, pv))
-    Future.successful(List(bindInsertHeatPumpPvCoverageByMonth, bindInsertHomePowerData))
+
+    for {
+      _ <- doInsertHomePowerData(homePowerData, date, pv)
+      _ <- doInsertHeatPumpPvCoverage(localDate, date, heatpumpConsumption, pv)
+    } yield List(insertHomePowerDataCreator, insertHeatPumpPvCoverageByMonthCreator)
+  }
+
+  private def doInsertHeatPumpPvCoverage(localDate: time.LocalDate, date: Date, heatpumpConsumption: Double, pv: Double) = {
+    insertHeatPumpPvCoverageByMonthCreator.map({
+      ps =>
+        val bindInsertHeatPumpPvCoverageByMonth = ps.bind()
+        bindInsertHeatPumpPvCoverageByMonth.setShort("day", localDate.getDayOfMonth.toShort)
+        bindInsertHeatPumpPvCoverageByMonth.setShort("month", localDate.getMonth.getValue.toShort)
+        bindInsertHeatPumpPvCoverageByMonth.setShort("year", localDate.getYear.toShort)
+        bindInsertHeatPumpPvCoverageByMonth.setTimestamp("timestamp", date)
+        bindInsertHeatPumpPvCoverageByMonth.setDouble("pv", pv)
+        bindInsertHeatPumpPvCoverageByMonth.setDouble("consumption", heatpumpConsumption)
+        bindInsertHeatPumpPvCoverageByMonth.setDouble("coveredByPv", calculateCoveredByPv(heatpumpConsumption, pv))
+    })
+  }
+
+  private def doInsertHomePowerData(homePowerData: HomePowerData, date: Date, pv: Double) = {
+    val partitionKey = 0 // this avoids partitioning of data and therefore has performance impacts...however for now I'm running a single cassandra node anyhow
+    insertHomePowerDataCreator.map({
+      ps =>
+        val bindInsertHomePowerData = ps.bind()
+        bindInsertHomePowerData.setTimestamp("timestamp", date)
+        bindInsertHomePowerData.setInt("partition_key", partitionKey)
+        bindInsertHomePowerData.setDouble("powerGrid", homePowerData.powerGrid)
+        bindInsertHomePowerData.setDouble("powerLoad", homePowerData.powerLoad)
+        bindInsertHomePowerData.setDouble("powerPv", pv)
+        bindInsertHomePowerData.setDouble("selfConsumption", homePowerData.selfConsumption.getOrElse(0.0))
+        bindInsertHomePowerData.setDouble("autonomy", homePowerData.autonomy.getOrElse(0.0))
+        bindInsertHomePowerData.setDouble("heatpumpCurrentPowerConsumption", homePowerData.heatpumpCurrentPowerConsumption)
+        bindInsertHomePowerData.setDouble("heatPumpCumulativePowerConsumption", homePowerData.heatpumpCumulativePowerConsumption)
+    })
   }
 
   private def calculateCoveredByPv(consumption: Double, pv: Double): Double = {
