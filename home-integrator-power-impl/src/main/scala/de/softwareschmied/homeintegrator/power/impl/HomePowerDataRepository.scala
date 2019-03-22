@@ -10,7 +10,7 @@ import com.datastax.driver.core._
 import com.lightbend.lagom.scaladsl.persistence.ReadSideProcessor
 import com.lightbend.lagom.scaladsl.persistence.cassandra.{CassandraReadSide, CassandraSession}
 import de.softwareschmied.homedataintegration.{HomePowerData, HomePowerDataJsonSupport}
-import de.softwareschmied.homeintegrator.power.api.{DayHeatpumpPvCoverage, HeatpumpPvCoverage}
+import de.softwareschmied.homeintegrator.power.api.{HeatpumpPvCoverage, TimeHeatPumpCoverage}
 import de.softwareschmied.homeintegrator.tools.MathFunctions
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -42,17 +42,28 @@ private[impl] class HomePowerDataRepository(session: CassandraSession)(implicit 
     }
   }
 
-  def getHeatpumpPvCoverageByMonth(month: Int, year: Int): Future[Seq[DayHeatpumpPvCoverage]] = {
-    // aggregating lots of rows on cassandra side is okish performance wise...maybe I should prefer maintaining some additional tables for the aggregates
-    // needes. This will make querying way faster as it moves the aggregation to the write side
+  def getHeatpumpPvCoverageByMonth(month: Int, year: Int): Future[Seq[TimeHeatPumpCoverage]] = {
     session.selectAll(
       """
         SELECT day, consumption, pv, coveredByPv FROM heatPumpPvCoverageByMonth WHERE month=? AND year=?
       """, java.lang.Short.valueOf(month.toShort), java.lang.Short.valueOf(year.toShort)).map { rows =>
       rows.map {
         row =>
-          DayHeatpumpPvCoverage(java.time.LocalDate.parse(s"""$year-$month-${row.getShort("day").toString}""", dateTimeFormatter).atStartOfDay().toInstant(ZoneOffset.UTC)
+          TimeHeatPumpCoverage(java.time.LocalDate.parse(s"""$year-$month-${row.getShort("day").toString}""", dateTimeFormatter).atStartOfDay().toInstant(ZoneOffset.UTC)
             .getEpochSecond, HeatpumpPvCoverage(row.getDouble("consumption"), row.getDouble("coveredByPv"), row.getDouble("pv")))
+      }
+    }
+  }
+
+  def getHeatpumpPvCoverageByYear(year: Int): Future[Seq[TimeHeatPumpCoverage]] = {
+    session.selectAll(
+      """
+        SELECT month, consumption, pv, coveredByPv FROM heatPumpPvCoverageByYear WHERE year=?
+      """, java.lang.Short.valueOf(year.toShort)).map { rows =>
+      rows.map {
+        row =>
+          TimeHeatPumpCoverage(java.time.LocalDate.parse(s"""$year-${row.getShort("month").toString}-1""", dateTimeFormatter).atStartOfDay().toInstant
+          (ZoneOffset.UTC).getEpochSecond, HeatpumpPvCoverage(row.getDouble("consumption"), row.getDouble("coveredByPv"), row.getDouble("pv")))
       }
     }
   }
@@ -267,33 +278,33 @@ private[impl] class HomePowerDataEventProcessor(session: CassandraSession, readS
   }
 
   private def doPrepareInsertHeatPumpPvCoverage(selectF: time.LocalDateTime => Future[Seq[(Double, Double, Double)]],
-                                                insertF: (time.LocalDateTime, Double, Double) => Future[BoundStatement],
+                                                insertF: (time.LocalDateTime, Double, Double, Double) => Future[BoundStatement],
                                                 dateTime: time.LocalDateTime, consumption: Double, pv: Double) = {
     val hourData = selectF(dateTime)
 
     hourData.flatMap {
-      case Nil => insertF(dateTime, consumption, pv)
+      case Nil => insertF(dateTime, consumption, pv, calculateCoveredByPv(consumption, pv))
       case x =>
-        val y = x :+ (pv, consumption, calculateCoveredByPv(consumption, pv))
-        val averagePv = mathFunctions.average(y.map(_._1))
-        val averageConsumption = mathFunctions.average(y.map(_._2))
-        insertF(dateTime, averageConsumption, averagePv)
+        val averagePv = mathFunctions.average(x.map(_._1))
+        val averageConsumption = mathFunctions.average(x.map(_._2))
+        val coveredByPv = mathFunctions.average(x.map(_._3))
+        insertF(dateTime, averageConsumption, averagePv, coveredByPv)
     }
   }
 
   private def selectHeatpumpPvCoverageDataForCurrentHour(dateTime: LocalDateTime) = {
     session.selectAll(
       """
-        SELECT pv, consumption FROM heatPumpPvCoverageByHour WHERE hour = ?
+        SELECT pv, consumption, coveredByPv FROM heatPumpPvCoverageByHour WHERE hour = ?
       """, java.lang.Short.valueOf(dateTime.getHour.toShort.toString))
       .map { rows =>
         rows.map {
-          row => Tuple3(row.getDouble("pv"), row.getDouble("consumption"), 0.0) // TODO: convert to Tuple2 if coveredByPv is not needed
+          row => Tuple3(row.getDouble("pv"), row.getDouble("consumption"), row.getDouble("coveredByPv"))
         }
       }
   }
 
-  private def doInsertHeatPumpPvCoverageByDay(dateTime: time.LocalDateTime, consumption: Double, pv: Double) = {
+  private def doInsertHeatPumpPvCoverageByDay(dateTime: time.LocalDateTime, consumption: Double, pv: Double, coveredByPv: Double) = {
     insertHeatPumpPvCoverageByDayCreator.map({
       ps =>
         val bindInsertHeatPumpPvCoverageByDay = ps.bind()
@@ -301,7 +312,7 @@ private[impl] class HomePowerDataEventProcessor(session: CassandraSession, readS
         bindInsertHeatPumpPvCoverageByDay.setShort("day", dateTime.getDayOfMonth.toShort)
         bindInsertHeatPumpPvCoverageByDay.setDouble("pv", pv)
         bindInsertHeatPumpPvCoverageByDay.setDouble("consumption", consumption)
-        bindInsertHeatPumpPvCoverageByDay.setDouble("coveredByPv", calculateCoveredByPv(consumption, pv))
+        bindInsertHeatPumpPvCoverageByDay.setDouble("coveredByPv", coveredByPv)
     })
   }
 
@@ -317,7 +328,7 @@ private[impl] class HomePowerDataEventProcessor(session: CassandraSession, readS
       }
   }
 
-  private def doInsertHeatPumpPvCoverageByMonth(dateTime: time.LocalDateTime, consumption: Double, pv: Double) = {
+  private def doInsertHeatPumpPvCoverageByMonth(dateTime: time.LocalDateTime, consumption: Double, pv: Double, coveredByPv: Double) = {
     insertHeatPumpPvCoverageByMonthCreator.map({
       ps =>
         val bindInsertHeatPumpPvCoverageByDay = ps.bind()
@@ -326,7 +337,7 @@ private[impl] class HomePowerDataEventProcessor(session: CassandraSession, readS
         bindInsertHeatPumpPvCoverageByDay.setShort("year", dateTime.getYear.toShort)
         bindInsertHeatPumpPvCoverageByDay.setDouble("pv", pv)
         bindInsertHeatPumpPvCoverageByDay.setDouble("consumption", consumption)
-        bindInsertHeatPumpPvCoverageByDay.setDouble("coveredByPv", calculateCoveredByPv(consumption, pv))
+        bindInsertHeatPumpPvCoverageByDay.setDouble("coveredByPv", coveredByPv)
     })
   }
 
@@ -342,15 +353,15 @@ private[impl] class HomePowerDataEventProcessor(session: CassandraSession, readS
       }
   }
 
-  private def doInsertHeatPumpPvCoverageByYear(dateTime: time.LocalDateTime, heatpumpConsumption: Double, pv: Double) = {
+  private def doInsertHeatPumpPvCoverageByYear(dateTime: time.LocalDateTime, consumption: Double, pv: Double, coveredByPv: Double) = {
     insertHeatPumpPvCoverageByYearCreator.map({
       ps =>
         val bindInsertHeatPumpPvCoverageByDay = ps.bind()
         bindInsertHeatPumpPvCoverageByDay.setShort("month", dateTime.getMonth.getValue.toShort)
         bindInsertHeatPumpPvCoverageByDay.setShort("year", dateTime.getYear.toShort)
         bindInsertHeatPumpPvCoverageByDay.setDouble("pv", pv)
-        bindInsertHeatPumpPvCoverageByDay.setDouble("consumption", heatpumpConsumption)
-        bindInsertHeatPumpPvCoverageByDay.setDouble("coveredByPv", calculateCoveredByPv(heatpumpConsumption, pv))
+        bindInsertHeatPumpPvCoverageByDay.setDouble("consumption", consumption)
+        bindInsertHeatPumpPvCoverageByDay.setDouble("coveredByPv", coveredByPv)
     })
   }
 

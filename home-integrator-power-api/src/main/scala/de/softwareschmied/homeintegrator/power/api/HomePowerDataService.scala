@@ -4,7 +4,7 @@ import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.lightbend.lagom.scaladsl.api.{Descriptor, Service, ServiceCall}
 import de.softwareschmied.homedataintegration.HomePowerData
-import de.softwareschmied.homeintegrator.power.api.{DayHeatpumpPvCoverage, HeatpumpPvCoverage}
+import de.softwareschmied.homeintegrator.power.api.{HeatpumpPvCoverage, TimeHeatPumpCoverage}
 import play.api.libs.json.{Format, Json}
 
 object HomePowerDataService {
@@ -18,11 +18,13 @@ trait HomePowerDataService extends Service {
 
   def homePowerDataFilteredByTimestamp(interval: Int, from: Int): ServiceCall[String, Source[HomePowerData, NotUsed]]
 
-  def heatpumpPvCoverage(year: Int, month: Int): ServiceCall[NotUsed, Seq[DayHeatpumpPvCoverage]]
+  def heatpumpPvCoverage(year: Int, month: Int): ServiceCall[NotUsed, Seq[TimeHeatPumpCoverage]]
+
+  def heatpumpPvCoverageByYear(year: Int): ServiceCall[NotUsed, Seq[TimeHeatPumpCoverage]]
 
   implicit val homePowerDataFormat: Format[HomePowerData] = Json.format[HomePowerData]
   implicit val heatpumpPvCoverageFormat: Format[HeatpumpPvCoverage] = Json.format[HeatpumpPvCoverage]
-  implicit val dayHeatpumpPvCoverageFormat: Format[DayHeatpumpPvCoverage] = Json.format[DayHeatpumpPvCoverage]
+  implicit val dayHeatpumpPvCoverageFormat: Format[TimeHeatPumpCoverage] = Json.format[TimeHeatPumpCoverage]
 
   override final def descriptor: Descriptor = {
     import Service._
@@ -33,6 +35,7 @@ trait HomePowerDataService extends Service {
         pathCall("/api/homePowerData/:interval?from", homePowerDataFilteredByTimestamp _),
         pathCall("/api/pastHomePowerData", pastHomePowerData _),
         pathCall("/api/homePowerData/heatpumpPvCoverage/:year/:month", heatpumpPvCoverage _),
+        pathCall("/api/homePowerData/heatpumpPvCoverage/:year", heatpumpPvCoverageByYear _),
       )
       .withAutoAcl(true)
     // @formatter:on
