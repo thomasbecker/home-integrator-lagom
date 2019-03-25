@@ -73,6 +73,10 @@ class HomePowerDataServiceImpl(system: ActorSystem, persistentEntityRegistry: Pe
   override def heatpumpPvCoverageByYear(year: Int): ServiceCall[NotUsed, Seq[TimeHeatPumpCoverage]] = {
     _ => homeDataRepository.getHeatpumpPvCoverageByYear(year)
   }
+
+  override def heatpumpPvCoverageTotal(): ServiceCall[NotUsed, Seq[TimeHeatPumpCoverage]] = {
+    _ => homeDataRepository.getHeatpumpPvCoverageTotal()
+  }
 }
 
 class HomePowerDataFetchScheduler(system: ActorSystem, persistentEntityRegistry: PersistentEntityRegistry)(implicit val mat: Materializer,

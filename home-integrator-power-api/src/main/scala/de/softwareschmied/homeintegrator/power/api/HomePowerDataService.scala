@@ -22,6 +22,8 @@ trait HomePowerDataService extends Service {
 
   def heatpumpPvCoverageByYear(year: Int): ServiceCall[NotUsed, Seq[TimeHeatPumpCoverage]]
 
+  def heatpumpPvCoverageTotal(): ServiceCall[NotUsed, Seq[TimeHeatPumpCoverage]]
+
   implicit val homePowerDataFormat: Format[HomePowerData] = Json.format[HomePowerData]
   implicit val heatpumpPvCoverageFormat: Format[HeatpumpPvCoverage] = Json.format[HeatpumpPvCoverage]
   implicit val dayHeatpumpPvCoverageFormat: Format[TimeHeatPumpCoverage] = Json.format[TimeHeatPumpCoverage]
@@ -34,8 +36,9 @@ trait HomePowerDataService extends Service {
         pathCall("/api/homePowerData/live/:interval", homePowerData _),
         pathCall("/api/homePowerData/:interval?from", homePowerDataFilteredByTimestamp _),
         pathCall("/api/pastHomePowerData", pastHomePowerData _),
-        pathCall("/api/homePowerData/heatpumpPvCoverage/:year/:month", heatpumpPvCoverage _),
-        pathCall("/api/homePowerData/heatpumpPvCoverage/:year", heatpumpPvCoverageByYear _),
+        pathCall("/api/heatpumpPvCoverage/:year/:month", heatpumpPvCoverage _),
+        pathCall("/api/heatpumpPvCoverage/:year", heatpumpPvCoverageByYear _),
+        pathCall("/api/heatpumpPvCoverage", heatpumpPvCoverageTotal _),
       )
       .withAutoAcl(true)
     // @formatter:on

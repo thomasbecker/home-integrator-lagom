@@ -15,13 +15,15 @@ val homedataintegration = "de.softwareschmied" %% "homedataintegration" % "0.0.1
 val macwire = "com.softwaremill.macwire" %% "macros" % "2.2.5" % "provided"
 val scalaTest = "org.scalatest" %% "scalatest" % "3.0.1" % Test
 val specs2 = "org.specs2" %% "specs2-core" % "4.0.2" % Test
+val scalaLogging = "com.typesafe.scala-logging" %% "scala-logging" % "3.7.2"
 
 lazy val buildVersion = sys.props.getOrElse("buildVersion", "1.0.0-SNAPSHOT")
 
 lazy val `home-integrator-tools` = (project in file("home-integrator-tools"))
   .settings(
     libraryDependencies ++= Seq(
-      specs2
+      specs2,
+      scalaLogging
     ),
     resolvers += Resolver.mavenLocal
   )

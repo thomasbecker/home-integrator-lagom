@@ -17,10 +17,9 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 
 private[impl] class HomePowerDataRepository(session: CassandraSession)(implicit ec: ExecutionContext) {
 
-  val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-M-d")
+  private val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-M-d")
 
   def getHomeDataSince(timestamp: Int): Future[Seq[HomePowerData]] = {
-
     val timestampInstant = Instant.ofEpochSecond(timestamp).atZone(ZoneId.systemDefault())
     val date = Date.from(timestampInstant.toInstant)
     session.selectAll(
@@ -64,6 +63,19 @@ private[impl] class HomePowerDataRepository(session: CassandraSession)(implicit 
         row =>
           TimeHeatPumpCoverage(java.time.LocalDate.parse(s"""$year-${row.getShort("month").toString}-1""", dateTimeFormatter).atStartOfDay().toInstant
           (ZoneOffset.UTC).getEpochSecond, HeatpumpPvCoverage(row.getDouble("consumption"), row.getDouble("coveredByPv"), row.getDouble("pv")))
+      }
+    }
+  }
+
+  def getHeatpumpPvCoverageTotal(): Future[Seq[TimeHeatPumpCoverage]] = {
+    session.selectAll(
+      """
+        SELECT year, AVG(consumption) AS consumption, AVG(coveredbypv) AS coveredbypv, AVG(pv) AS pv FROM heatPumpPvCoverageByYear GROUP BY year;
+      """).map { rows =>
+      rows.map {
+        row =>
+          TimeHeatPumpCoverage(java.time.LocalDate.of(row.getShort("year"), 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC).getEpochSecond, HeatpumpPvCoverage(row.getDouble("consumption"),
+            row.getDouble("coveredByPv"), row.getDouble("pv")))
       }
     }
   }
@@ -166,20 +178,6 @@ private[impl] class HomePowerDataEventProcessor(session: CassandraSession, readS
           PRIMARY KEY (year, month)
         )
       """)
-      //      _ <- session.executeCreateTable(
-      //        """CREATE OR REPLACE FUNCTION heatpumpPv (consumption double, pv double)
-      //          CALLED ON NULL INPUT RETURNS double LANGUAGE java AS
-      //          $$
-      //            if(pv > 0){
-      //              if(consumption > pv)
-      //                return pv;
-      //              else
-      //                return consumption;
-      //            } else {
-      //              return 0.0;
-      //            }
-      //          $$;"""
-      //      )
     } yield Done
   }
 
