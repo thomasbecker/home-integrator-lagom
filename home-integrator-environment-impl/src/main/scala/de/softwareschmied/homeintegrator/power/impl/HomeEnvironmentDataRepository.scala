@@ -8,11 +8,11 @@ import com.datastax.driver.core._
 import com.lightbend.lagom.scaladsl.persistence.ReadSideProcessor
 import com.lightbend.lagom.scaladsl.persistence.cassandra.{CassandraReadSide, CassandraSession}
 import de.softwareschmied.homedataintegration.{HomeEnvironmentData, HomeEnvironmentDataJsonSupport}
+import org.slf4j.LoggerFactory
 
 import scala.concurrent.{ExecutionContext, Future}
 
 private[impl] class HomeEnvironmentDataRepository(session: CassandraSession)(implicit ec: ExecutionContext) {
-
   def getHomeDataSince(timestamp: Int): Future[Seq[HomeEnvironmentData]] = {
 
     val timestampInstant = Instant.ofEpochSecond(timestamp).atZone(ZoneId.systemDefault())
@@ -45,6 +45,8 @@ private[impl] class HomeEnvironmentDataRepository(session: CassandraSession)(imp
 
 private[impl] class HomeEnvironmentDataEventProcessor(session: CassandraSession, readSide: CassandraReadSide)(implicit ec: ExecutionContext)
   extends ReadSideProcessor[HomeEnvironmentDataEvent] with HomeEnvironmentDataJsonSupport {
+
+  private val log = LoggerFactory.getLogger(classOf[HomeEnvironmentDataServiceImpl])
   private var insertHomeEnvironmentDataStatement: PreparedStatement = _
 
   override def buildHandler: ReadSideProcessor.ReadSideHandler[HomeEnvironmentDataEvent] = {
@@ -55,8 +57,6 @@ private[impl] class HomeEnvironmentDataEventProcessor(session: CassandraSession,
       .build
   }
 
-  override def aggregateTags = HomeEnvironmentDataEvent.Tag.allTags
-
   private def createTables() = {
     for {
       _ <- session.executeCreateTable(
@@ -64,6 +64,8 @@ private[impl] class HomeEnvironmentDataEventProcessor(session: CassandraSession,
         CREATE TABLE IF NOT EXISTS homeEnvironmentData (
           timestamp timestamp,
           partition_key int,
+          basementTemp double,
+          basementHumidity double,
           officeTemp double,
           livingRoomCo2 double,
           livingRoomTemp double,
@@ -71,8 +73,6 @@ private[impl] class HomeEnvironmentDataEventProcessor(session: CassandraSession,
           sleepingRoomCo2 double,
           sleepingRoomTemp double,
           sleepingRoomHumidity double,
-          basementTemp double,
-          basementHumidity double,
           heatingLeading double,
           heatingInlet double,
           waterTankMiddle double,
@@ -103,6 +103,7 @@ private[impl] class HomeEnvironmentDataEventProcessor(session: CassandraSession,
     val partitionKey = 0 // this avoids partitioning of data and therefore has performance impacts...however for now I'm running a single cassandra node anyhow
     val timestamp = Instant.ofEpochMilli(homeEnvironmentData.timestamp)
     val date = Date.from(timestamp)
+    log.info("Inserting {} to database.", homeEnvironmentData)
     Future.successful(List(
       insertHomeEnvironmentDataStatement.bind(
         date,
@@ -122,5 +123,7 @@ private[impl] class HomeEnvironmentDataEventProcessor(session: CassandraSession,
         java.lang.Double.valueOf(homeEnvironmentData.waterTankBottom.toString)
       )))
   }
+
+  override def aggregateTags = HomeEnvironmentDataEvent.Tag.allTags
 
 }

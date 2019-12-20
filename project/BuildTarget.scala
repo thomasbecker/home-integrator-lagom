@@ -52,8 +52,8 @@ object BuildTarget {
 
   val dockerRepository: String = deploymentRuntime match {
     case Kubernetes => "home-integrator"
-    case Unmanaged => "home-integrator"
-    case Marathon   => "home-integrator-marathon"
+    case Unmanaged => "little:5000"
+    case Marathon => "home-integrator-marathon"
     case ConductR   => "home-integrator-conductr"
   }
 }

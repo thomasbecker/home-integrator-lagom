@@ -54,7 +54,6 @@ object HomeEnvironmentDataSerializerRegistry extends JsonSerializerRegistry with
   implicit val homeEnvironmentDataCreatedFormat: Format[HomeEnvironmentDataCreated] = Json.format
   implicit val createHomeEnvironmentDataFormat: Format[CreateHomeEnvironmentData] = Json.format
 
-
   override def serializers = List(
     JsonSerializer[HomeEnvironmentData],
     JsonSerializer[HomeEnvironmentDataCreated],
