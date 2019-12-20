@@ -31,6 +31,8 @@ private[impl] class HomeEnvironmentDataRepository(session: CassandraSession)(imp
             row.getDouble("sleepingRoomCo2"),
             row.getDouble("sleepingRoomTemp"),
             row.getDouble("sleepingRoomHumidity"),
+            row.getDouble("basementTemp"),
+            row.getDouble("basementHumidity"),
             row.getDouble("heatingLeading"),
             row.getDouble("heatingInlet"),
             row.getDouble("waterTankMiddle"),
@@ -69,6 +71,8 @@ private[impl] class HomeEnvironmentDataEventProcessor(session: CassandraSession,
           sleepingRoomCo2 double,
           sleepingRoomTemp double,
           sleepingRoomHumidity double,
+          basementTemp double,
+          basementHumidity double,
           heatingLeading double,
           heatingInlet double,
           waterTankMiddle double,
@@ -84,8 +88,8 @@ private[impl] class HomeEnvironmentDataEventProcessor(session: CassandraSession,
       insertHomeEnvironmentData <- session.prepare(
         """
         INSERT INTO homeEnvironmentData(timestamp, partition_key, officeTemp, livingRoomCo2, livingRoomTemp, livingRoomHumidity, sleepingRoomCo2,
-        sleepingRoomTemp, sleepingRoomHumidity, heatingLeading, heatingInlet, waterTankMiddle, waterTankBottom)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        sleepingRoomTemp, sleepingRoomHumidity, basementTemp, basementHumidity, heatingLeading, heatingInlet, waterTankMiddle, waterTankBottom)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       """)
     } yield {
       insertHomeEnvironmentDataStatement = insertHomeEnvironmentData
@@ -110,6 +114,8 @@ private[impl] class HomeEnvironmentDataEventProcessor(session: CassandraSession,
         java.lang.Double.valueOf(homeEnvironmentData.sleepingRoomCo2.toString),
         java.lang.Double.valueOf(homeEnvironmentData.sleepingRoomTemp.toString),
         java.lang.Double.valueOf(homeEnvironmentData.sleepingRoomHumidity.toString),
+        java.lang.Double.valueOf(homeEnvironmentData.basementTemp.toString),
+        java.lang.Double.valueOf(homeEnvironmentData.basementHumidity.toString),
         java.lang.Double.valueOf(homeEnvironmentData.heatingLeading.toString),
         java.lang.Double.valueOf(homeEnvironmentData.heatingInlet.toString),
         java.lang.Double.valueOf(homeEnvironmentData.waterTankMiddle.toString),

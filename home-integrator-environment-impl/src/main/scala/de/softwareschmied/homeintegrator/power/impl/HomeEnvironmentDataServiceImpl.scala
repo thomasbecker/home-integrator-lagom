@@ -51,7 +51,7 @@ class HomeEnvironmentDataServiceImpl(system: ActorSystem, persistentEntityRegist
       log.info("Found {} homeEnvironmentDatas and divided them to: {} averaged homeEnvironmentDatas", pastHomeEnvironmentDatas.size, chunkedPastHomeDatas.size)
       pastHomeEnvironmentDatas = chunkedPastHomeDatas;
     }
-    source = Source(pastHomeEnvironmentDatas :+ new HomeEnvironmentData(9999.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+    source = Source(pastHomeEnvironmentDatas :+ new HomeEnvironmentData(9999.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
     Future.successful(Source.combine(source, tickSource)(Concat(_)))
   }
 

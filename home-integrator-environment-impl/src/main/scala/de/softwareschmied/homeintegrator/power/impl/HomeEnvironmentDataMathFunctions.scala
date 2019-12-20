@@ -4,8 +4,8 @@ import de.softwareschmied.homedataintegration.HomeEnvironmentData
 import de.softwareschmied.homeintegrator.tools.MathFunctions
 
 /**
-  * Created by Thomas Becker (thomas.becker00@gmail.com) on 24.12.18.
-  */
+ * Created by Thomas Becker (thomas.becker00@gmail.com) on 24.12.18.
+ */
 class HomeEnvironmentDataMathFunctions {
   def mathFunction = new MathFunctions
 
@@ -27,6 +27,11 @@ class HomeEnvironmentDataMathFunctions {
     var sleepingRoomHumiditySeq = List[Double]()
     seq.foreach(x => sleepingRoomHumiditySeq = x.sleepingRoomHumidity :: sleepingRoomHumiditySeq)
 
+    var basementTempSeq = List[Double]()
+    seq.foreach(x => basementTempSeq = x.basementTemp :: basementTempSeq)
+    var basementHumiditySeq = List[Double]()
+    seq.foreach(x => basementHumiditySeq = x.basementHumidity :: basementHumiditySeq)
+
     var heatingLeadingSeq = List[Double]()
     seq.foreach(x => heatingLeadingSeq = x.heatingLeading :: heatingLeadingSeq)
     var heatingInletSeq = List[Double]()
@@ -36,11 +41,7 @@ class HomeEnvironmentDataMathFunctions {
     var waterTankBottomSeq = List[Double]()
     seq.foreach(x => waterTankBottomSeq = x.waterTankBottom :: waterTankBottomSeq)
 
-    new HomeEnvironmentData(mathFunction.average(officeTempSeq), mathFunction.average(livingRoomCo2Seq), mathFunction.average(livingRoomTempSeq),
-      mathFunction.average(livingRoomHumiditySeq), mathFunction.average(sleepingRoomCo2Seq), mathFunction.average(sleepingRoomTempSeq), mathFunction.average
-      (sleepingRoomHumiditySeq), mathFunction.average(heatingLeadingSeq), mathFunction.average(heatingInletSeq), mathFunction.average(waterTankMiddleSeq),
-      mathFunction.average(waterTankBottomSeq), seq.last.timestamp)
+    HomeEnvironmentData(mathFunction.average(officeTempSeq), mathFunction.average(livingRoomCo2Seq), mathFunction.average(livingRoomTempSeq), mathFunction.average(livingRoomHumiditySeq), mathFunction.average(sleepingRoomCo2Seq), mathFunction.average(sleepingRoomTempSeq), mathFunction.average(sleepingRoomHumiditySeq), mathFunction.average(basementTempSeq), mathFunction.average(basementHumiditySeq), mathFunction.average(heatingLeadingSeq), mathFunction.average(heatingInletSeq), mathFunction.average(waterTankMiddleSeq), mathFunction.average(waterTankBottomSeq), seq.last.timestamp)
   }
-
 }
 
