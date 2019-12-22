@@ -25,7 +25,7 @@ class HomeEnvironmentDataServiceImpl(system: ActorSystem, persistentEntityRegist
   override def homeEnvironmentData(intervalS: Int) = ServiceCall { tickMessage =>
     Future.successful(RestartSource.withBackoff(
       minBackoff = 3.seconds,
-      maxBackoff = 30.seconds,
+      maxBackoff = 60.seconds,
       randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
     ) { () =>
       Source.tick(0 millis, intervalS seconds, "TICK").map((_) => homeEnvironmentCollector.collectData)
@@ -37,10 +37,10 @@ class HomeEnvironmentDataServiceImpl(system: ActorSystem, persistentEntityRegist
   override def homeEnvironmentDataFilteredByTimestamp(intervalS: Int, from: Int) = ServiceCall { _ =>
     val tickSource = RestartSource.withBackoff(
       minBackoff = 3.seconds,
-      maxBackoff = 30.seconds,
+      maxBackoff = 60.seconds,
       randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
     ) { () =>
-      Source.tick(0 millis, intervalS seconds, "TICK").map((_) => homeEnvironmentCollector.collectData)
+      Source.tick(1000 millis, intervalS seconds, "TICK").map((_) => homeEnvironmentCollector.collectData)
     }
     var pastHomeEnvironmentDatas = Await.result(homeDataRepository.getHomeDataSince(from), 120 seconds).to[scala.collection.immutable.Seq]
     log.info("Found: {} homeEnvironmentDatas. Target size: {}", pastHomeEnvironmentDatas.size, targetSize)
