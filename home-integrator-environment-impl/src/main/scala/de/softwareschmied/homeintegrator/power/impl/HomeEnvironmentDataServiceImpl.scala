@@ -20,7 +20,6 @@ class HomeEnvironmentDataServiceImpl(system: ActorSystem, persistentEntityRegist
   private val log = LoggerFactory.getLogger(classOf[HomeEnvironmentDataServiceImpl])
   private val homeEnvironmentCollector = new HomeEnvironmentCollector
   private val homeDataMathFunctions = new HomeEnvironmentDataMathFunctions
-  private val fetchInterval = system.settings.config.getDuration("fetchInterval", TimeUnit.MILLISECONDS).milliseconds
 
   override def homeEnvironmentData(intervalS: Int) = ServiceCall { tickMessage =>
     Future.successful(RestartSource.withBackoff(
@@ -28,7 +27,8 @@ class HomeEnvironmentDataServiceImpl(system: ActorSystem, persistentEntityRegist
       maxBackoff = 60.seconds,
       randomFactor = 0.2 // adds 20% "noise" to vary the intervals slightly
     ) { () =>
-      Source.tick(0 millis, intervalS seconds, "TICK").map((_) => homeEnvironmentCollector.collectData)
+      Source.tick(0 millis, intervalS seconds, "TICK").map((_) => Await.result(
+        homeDataRepository.getLastHomeEnvironmentData(), 30 seconds))
     })
   }
 

@@ -23,23 +23,33 @@ private[impl] class HomeEnvironmentDataRepository(session: CassandraSession)(imp
       """, date).map { rows =>
       rows.map {
         row =>
-          HomeEnvironmentData(
-            row.getDouble("officeTemp"),
-            row.getDouble("livingRoomCo2"),
-            row.getDouble("livingRoomTemp"),
-            row.getDouble("livingRoomHumidity"),
-            row.getDouble("sleepingRoomCo2"),
-            row.getDouble("sleepingRoomTemp"),
-            row.getDouble("sleepingRoomHumidity"),
-            row.getDouble("basementTemp"),
-            row.getDouble("basementHumidity"),
-            row.getDouble("heatingLeading"),
-            row.getDouble("heatingInlet"),
-            row.getDouble("waterTankMiddle"),
-            row.getDouble("waterTankBottom"),
-            row.getTimestamp("timestamp").getTime)
+          mapRowToHomeEnvironmentData(row)
       }
     }
+  }
+
+  def getLastHomeEnvironmentData(): Future[HomeEnvironmentData] = session.selectOne(
+    """SELECT * FROM homeenvironmentdata WHERE PARTITION_KEY=0 ORDER BY TIMESTAMP DESC LIMIT 1 ALLOW FILTERING"""
+  ).map { rowOption => rowOption.get }.map(row =>
+    mapRowToHomeEnvironmentData(row)
+  )
+
+  private def mapRowToHomeEnvironmentData(row: Row) = {
+    HomeEnvironmentData(
+      row.getDouble("officeTemp"),
+      row.getDouble("livingRoomCo2"),
+      row.getDouble("livingRoomTemp"),
+      row.getDouble("livingRoomHumidity"),
+      row.getDouble("sleepingRoomCo2"),
+      row.getDouble("sleepingRoomTemp"),
+      row.getDouble("sleepingRoomHumidity"),
+      row.getDouble("basementTemp"),
+      row.getDouble("basementHumidity"),
+      row.getDouble("heatingLeading"),
+      row.getDouble("heatingInlet"),
+      row.getDouble("waterTankMiddle"),
+      row.getDouble("waterTankBottom"),
+      row.getTimestamp("timestamp").getTime)
   }
 }
 
