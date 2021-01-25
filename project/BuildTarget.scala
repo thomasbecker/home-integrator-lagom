@@ -24,7 +24,7 @@ object BuildTarget {
       sys.error(s"The build target $v is not supported. Available: 'conductr', 'kubernetes', 'unmanaged', 'marathon'")
 
     case None =>
-      ConductR
+      Unmanaged
   }
 
   val additionalSettings = deploymentRuntime match {

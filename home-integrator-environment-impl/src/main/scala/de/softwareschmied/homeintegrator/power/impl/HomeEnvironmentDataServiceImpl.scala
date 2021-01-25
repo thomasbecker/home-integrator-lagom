@@ -1,7 +1,5 @@
 package de.softwareschmied.homeintegrator.power.impl
 
-import java.util.concurrent.TimeUnit
-
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.Materializer
@@ -12,6 +10,7 @@ import de.softwareschmied.homedataintegration.{HomeEnvironmentCollector, HomeEnv
 import de.softwareschmied.homeintegratorlagom.api.HomeEnvironmentDataService
 import org.slf4j.LoggerFactory
 
+import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 
@@ -51,7 +50,7 @@ class HomeEnvironmentDataServiceImpl(system: ActorSystem, persistentEntityRegist
       log.info("Found {} homeEnvironmentDatas and divided them to: {} averaged homeEnvironmentDatas", pastHomeEnvironmentDatas.size, chunkedPastHomeDatas.size)
       pastHomeEnvironmentDatas = chunkedPastHomeDatas;
     }
-    source = Source(pastHomeEnvironmentDatas :+ new HomeEnvironmentData(9999.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+    source = Source(pastHomeEnvironmentDatas :+ new HomeEnvironmentData(9999.0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
     Future.successful(Source.combine(source, tickSource)(Concat(_)))
   }
 

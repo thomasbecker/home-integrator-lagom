@@ -7,8 +7,6 @@ import de.softwareschmied.homeintegrator.tools.MathFunctions
  * Created by Thomas Becker (thomas.becker00@gmail.com) on 24.12.18.
  */
 class HomeEnvironmentDataMathFunctions {
-  def mathFunction = new MathFunctions
-
   def averageHomeEnvironmentData(seq: Seq[HomeEnvironmentData]): HomeEnvironmentData = {
     var officeTempSeq = List[Double]()
     seq.foreach(x => officeTempSeq = x.officeTemp :: officeTempSeq)
@@ -41,7 +39,14 @@ class HomeEnvironmentDataMathFunctions {
     var waterTankBottomSeq = List[Double]()
     seq.foreach(x => waterTankBottomSeq = x.waterTankBottom :: waterTankBottomSeq)
 
-    HomeEnvironmentData(mathFunction.average(officeTempSeq), mathFunction.average(livingRoomCo2Seq), mathFunction.average(livingRoomTempSeq), mathFunction.average(livingRoomHumiditySeq), mathFunction.average(sleepingRoomCo2Seq), mathFunction.average(sleepingRoomTempSeq), mathFunction.average(sleepingRoomHumiditySeq), mathFunction.average(basementTempSeq), mathFunction.average(basementHumiditySeq), mathFunction.average(heatingLeadingSeq), mathFunction.average(heatingInletSeq), mathFunction.average(waterTankMiddleSeq), mathFunction.average(waterTankBottomSeq), seq.last.timestamp)
+    var utilityRoomTempSeq = List[Double]()
+    seq.foreach(x => utilityRoomTempSeq = x.waterTankMiddle :: utilityRoomTempSeq)
+    var utilityRoomHumiditySeq = List[Double]()
+    seq.foreach(x => utilityRoomHumiditySeq = x.waterTankBottom :: utilityRoomHumiditySeq)
+
+    HomeEnvironmentData(mathFunction.average(officeTempSeq), mathFunction.average(livingRoomCo2Seq), mathFunction.average(livingRoomTempSeq), mathFunction.average(livingRoomHumiditySeq), mathFunction.average(sleepingRoomCo2Seq), mathFunction.average(sleepingRoomTempSeq), mathFunction.average(sleepingRoomHumiditySeq), mathFunction.average(basementTempSeq), mathFunction.average(basementHumiditySeq), mathFunction.average(heatingLeadingSeq), mathFunction.average(heatingInletSeq), mathFunction.average(waterTankMiddleSeq), mathFunction.average(waterTankBottomSeq), mathFunction.average(utilityRoomTempSeq), mathFunction.average(utilityRoomHumiditySeq), seq.last.timestamp)
   }
+
+  def mathFunction = new MathFunctions
 }
 

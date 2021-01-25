@@ -1,8 +1,5 @@
 package de.softwareschmied.homeintegrator.power.impl
 
-import java.time.{Instant, ZoneId}
-import java.util.Date
-
 import akka.Done
 import com.datastax.driver.core._
 import com.lightbend.lagom.scaladsl.persistence.ReadSideProcessor
@@ -10,6 +7,8 @@ import com.lightbend.lagom.scaladsl.persistence.cassandra.{CassandraReadSide, Ca
 import de.softwareschmied.homedataintegration.{HomeEnvironmentData, HomeEnvironmentDataJsonSupport}
 import org.slf4j.LoggerFactory
 
+import java.time.{Instant, ZoneId}
+import java.util.Date
 import scala.concurrent.{ExecutionContext, Future}
 
 private[impl] class HomeEnvironmentDataRepository(session: CassandraSession)(implicit ec: ExecutionContext) {
@@ -49,6 +48,8 @@ private[impl] class HomeEnvironmentDataRepository(session: CassandraSession)(imp
       row.getDouble("heatingInlet"),
       row.getDouble("waterTankMiddle"),
       row.getDouble("waterTankBottom"),
+      row.getDouble("utilityRoomTemp"),
+      row.getDouble("utilityRoomHumidity"),
       row.getTimestamp("timestamp").getTime)
   }
 }
@@ -87,6 +88,8 @@ private[impl] class HomeEnvironmentDataEventProcessor(session: CassandraSession,
           heatingInlet double,
           waterTankMiddle double,
           waterTankBottom double,
+          utilityRoomTemp double,
+          utilityRoomHumidity double,
           PRIMARY KEY (partition_key, timestamp)
         )
       """)
@@ -98,8 +101,9 @@ private[impl] class HomeEnvironmentDataEventProcessor(session: CassandraSession,
       insertHomeEnvironmentData <- session.prepare(
         """
         INSERT INTO homeEnvironmentData(timestamp, partition_key, officeTemp, livingRoomCo2, livingRoomTemp, livingRoomHumidity, sleepingRoomCo2,
-        sleepingRoomTemp, sleepingRoomHumidity, basementTemp, basementHumidity, heatingLeading, heatingInlet, waterTankMiddle, waterTankBottom)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        sleepingRoomTemp, sleepingRoomHumidity, basementTemp, basementHumidity, heatingLeading, heatingInlet,
+        waterTankMiddle, waterTankBottom, utilityRoomTemp, utilityRoomHumidity)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       """)
     } yield {
       insertHomeEnvironmentDataStatement = insertHomeEnvironmentData
@@ -130,7 +134,9 @@ private[impl] class HomeEnvironmentDataEventProcessor(session: CassandraSession,
         java.lang.Double.valueOf(homeEnvironmentData.heatingLeading.toString),
         java.lang.Double.valueOf(homeEnvironmentData.heatingInlet.toString),
         java.lang.Double.valueOf(homeEnvironmentData.waterTankMiddle.toString),
-        java.lang.Double.valueOf(homeEnvironmentData.waterTankBottom.toString)
+        java.lang.Double.valueOf(homeEnvironmentData.waterTankBottom.toString),
+        java.lang.Double.valueOf(homeEnvironmentData.utilityRoomTemp.toString),
+        java.lang.Double.valueOf(homeEnvironmentData.utilityRoomHumidity.toString)
       )))
   }
 
