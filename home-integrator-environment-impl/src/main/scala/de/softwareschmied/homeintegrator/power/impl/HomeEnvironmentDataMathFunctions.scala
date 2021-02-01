@@ -40,9 +40,9 @@ class HomeEnvironmentDataMathFunctions {
     seq.foreach(x => waterTankBottomSeq = x.waterTankBottom :: waterTankBottomSeq)
 
     var utilityRoomTempSeq = List[Double]()
-    seq.foreach(x => utilityRoomTempSeq = x.waterTankMiddle :: utilityRoomTempSeq)
+    seq.foreach(x => utilityRoomTempSeq = x.utilityRoomTemp :: utilityRoomTempSeq)
     var utilityRoomHumiditySeq = List[Double]()
-    seq.foreach(x => utilityRoomHumiditySeq = x.waterTankBottom :: utilityRoomHumiditySeq)
+    seq.foreach(x => utilityRoomHumiditySeq = x.utilityRoomHumidity :: utilityRoomHumiditySeq)
 
     HomeEnvironmentData(mathFunction.average(officeTempSeq), mathFunction.average(livingRoomCo2Seq), mathFunction.average(livingRoomTempSeq), mathFunction.average(livingRoomHumiditySeq), mathFunction.average(sleepingRoomCo2Seq), mathFunction.average(sleepingRoomTempSeq), mathFunction.average(sleepingRoomHumiditySeq), mathFunction.average(basementTempSeq), mathFunction.average(basementHumiditySeq), mathFunction.average(heatingLeadingSeq), mathFunction.average(heatingInletSeq), mathFunction.average(waterTankMiddleSeq), mathFunction.average(waterTankBottomSeq), mathFunction.average(utilityRoomTempSeq), mathFunction.average(utilityRoomHumiditySeq), seq.last.timestamp)
   }
